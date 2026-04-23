@@ -128,6 +128,24 @@
     font-family: inherit;
   }
 
+  /* Themed popup */
+  .leaflet-popup-content-wrapper {
+    @apply rounded-xl border border-border bg-card text-card-foreground;
+    box-shadow: var(--shadow-floating);
+    padding: 0.5rem;
+  }
+  .leaflet-popup-content {
+    margin: 0.25rem 0.5rem !important;
+    line-height: 1.4;
+  }
+  .leaflet-popup-tip {
+    background: hsl(var(--card));
+    box-shadow: var(--shadow-floating);
+  }
+  .leaflet-popup-close-button {
+    color: hsl(var(--muted-foreground)) !important;
+  }
+
   .serwis-pin {
     @apply flex items-center justify-center rounded-full text-white;
     width: 32px;

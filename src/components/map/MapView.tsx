@@ -2,12 +2,13 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import {
   MapContainer,
   Marker,
+  Popup,
   TileLayer,
   useMap,
   useMapEvents,
 } from "react-leaflet";
 import L from "leaflet";
-import { Plus, Info } from "lucide-react";
+import { Plus, Info, CalendarClock, MapPin, Phone } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useCustomers } from "@/store/customers";
 import { useT } from "@/lib/i18n";
@@ -16,6 +17,8 @@ import { buildDivIcon } from "@/components/map/pinIcon";
 import { cn } from "@/lib/utils";
 import { Legend } from "@/components/map/Legend";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { StatusBadge } from "@/components/StatusBadge";
+import { differenceInCalendarDays, format } from "date-fns";
 
 interface MapViewProps {
   onSelectCustomer: (c: Customer) => void;
@@ -109,16 +112,93 @@ export function MapView({
         <MapEvents onLongPress={onAddAt} />
         {selected && <FlyTo lat={selected.lat} lng={selected.lng} />}
 
-        {filtered.map((c) => (
-          <Marker
-            key={c.id}
-            position={[c.lat, c.lng]}
-            icon={buildDivIcon(c, today, thresholds) as L.DivIcon}
-            eventHandlers={{
-              click: () => onSelectCustomer(c),
-            }}
-          />
-        ))}
+        {filtered.map((c) => {
+          const days = c.nextAppointment
+            ? differenceInCalendarDays(new Date(c.nextAppointment), new Date())
+            : null;
+          const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${c.lat},${c.lng}`;
+          return (
+            <Marker
+              key={c.id}
+              position={[c.lat, c.lng]}
+              icon={buildDivIcon(c, today, thresholds) as L.DivIcon}
+            >
+              <Popup
+                closeButton={false}
+                offset={[0, -8]}
+                className="serwis-popup"
+              >
+                <div className="min-w-[220px] space-y-2 p-1">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="font-semibold leading-tight text-foreground">
+                      {c.name}
+                    </div>
+                    <StatusBadge status={c.status} />
+                  </div>
+
+                  <div className="flex items-start gap-1.5 text-xs text-muted-foreground">
+                    <MapPin className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                    <span className="leading-snug">{c.address}</span>
+                  </div>
+
+                  {c.nextAppointment && (
+                    <div className="flex items-center gap-1.5 text-xs">
+                      <CalendarClock
+                        className={`h-3.5 w-3.5 ${days != null && days < 0 ? "text-status-issue" : days != null && days <= 7 ? "text-status-progress" : "text-muted-foreground"}`}
+                      />
+                      <span className="text-foreground">
+                        {format(new Date(c.nextAppointment), "dd.MM.yyyy HH:mm")}
+                      </span>
+                      {days != null && (
+                        <span
+                          className={`ml-auto font-medium ${days < 0 ? "text-status-issue" : days <= 7 ? "text-status-progress" : "text-muted-foreground"}`}
+                        >
+                          {t.daysUntil(days)}
+                        </span>
+                      )}
+                    </div>
+                  )}
+
+                  {c.phone && (
+                    <a
+                      href={`tel:${c.phone}`}
+                      className="flex items-center gap-1.5 text-xs text-primary hover:underline"
+                    >
+                      <Phone className="h-3.5 w-3.5" />
+                      {c.phone}
+                    </a>
+                  )}
+
+                  {c.notes && (
+                    <p className="line-clamp-2 text-xs text-muted-foreground">
+                      {c.notes}
+                    </p>
+                  )}
+
+                  <div className="flex gap-1.5 pt-1">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="h-8 flex-1 text-xs"
+                      asChild
+                    >
+                      <a href={mapsUrl} target="_blank" rel="noreferrer">
+                        {t.navigate}
+                      </a>
+                    </Button>
+                    <Button
+                      size="sm"
+                      className="h-8 flex-1 text-xs"
+                      onClick={() => onSelectCustomer(c)}
+                    >
+                      {t.edit}
+                    </Button>
+                  </div>
+                </div>
+              </Popup>
+            </Marker>
+          );
+        })}
       </MapContainer>
 
       {/* Filter chips */}
