@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Loader2, MapPin, Trash2 } from "lucide-react";
+import { Loader2, MapPin, Search, Trash2, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -59,6 +59,8 @@ export function CustomerForm({ initial, editingId, onClose }: Props) {
   const [notes, setNotes] = useState(initial?.notes ?? "");
   const [tags, setTags] = useState((initial?.tags ?? []).join(", "));
   const [geocoding, setGeocoding] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
 
   useEffect(() => {
     setName(initial?.name ?? "");
@@ -71,20 +73,33 @@ export function CustomerForm({ initial, editingId, onClose }: Props) {
     setNextAppt(toLocalInput(initial?.nextAppointment));
     setNotes(initial?.notes ?? "");
     setTags((initial?.tags ?? []).join(", "));
+    setFormError(null);
   }, [initial, editingId]);
 
+  const hasCoords = lat != null && lng != null;
+
   const handleGeocode = async () => {
-    if (!address.trim()) return;
+    if (!address.trim()) {
+      setFormError("Wpisz adres, zanim klikniesz „Znajdź”.");
+      return;
+    }
     setGeocoding(true);
+    setFormError(null);
     try {
       const r = await geocodeAddress(address);
       if (!r) {
-        toast.error(t.geocodeFail);
+        setFormError(
+          "Nie znaleziono tego adresu. Spróbuj wpisać go dokładniej (ulica, numer, miasto) lub zaznacz miejsce długim naciśnięciem na mapie.",
+        );
       } else {
         setLat(r.lat);
         setLng(r.lng);
-        toast.success("OK");
+        toast.success("Adres znaleziony");
       }
+    } catch (err) {
+      setFormError(
+        "Nie udało się połączyć z serwisem geokodowania. Sprawdź internet lub zaznacz miejsce na mapie.",
+      );
     } finally {
       setGeocoding(false);
     }
@@ -93,9 +108,12 @@ export function CustomerForm({ initial, editingId, onClose }: Props) {
   const handleReverse = async () => {
     if (lat == null || lng == null) return;
     setGeocoding(true);
+    setFormError(null);
     try {
       const r = await reverseGeocode(lat, lng);
       if (r) setAddress(r);
+    } catch {
+      setFormError("Nie udało się pobrać adresu z punktu na mapie.");
     } finally {
       setGeocoding(false);
     }
@@ -103,32 +121,53 @@ export function CustomerForm({ initial, editingId, onClose }: Props) {
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name.trim() || !address.trim()) {
-      toast.error(t.requiredField);
+    setFormError(null);
+
+    if (!name.trim()) {
+      setFormError("Imię i nazwisko jest wymagane.");
       return;
     }
+    if (!address.trim() && !hasCoords) {
+      setFormError(
+        "Podaj adres albo zaznacz miejsce na mapie (długie naciśnięcie).",
+      );
+      return;
+    }
+
     let coordsLat = lat;
     let coordsLng = lng;
+
+    // Try auto-geocode only if user didn't already set coords
     if (coordsLat == null || coordsLng == null) {
-      setGeocoding(true);
+      setSubmitting(true);
       try {
         const r = await geocodeAddress(address);
         if (r) {
           coordsLat = r.lat;
           coordsLng = r.lng;
+          setLat(r.lat);
+          setLng(r.lng);
         } else {
-          toast.error(t.geocodeFail);
-          setGeocoding(false);
+          setFormError(
+            "Nie znaleziono adresu. Kliknij „Znajdź” obok adresu albo długo naciśnij miejsce na mapie, a potem zapisz.",
+          );
+          setSubmitting(false);
           return;
         }
+      } catch {
+        setFormError(
+          "Problem z geokodowaniem. Długo naciśnij miejsce na mapie, aby zaznaczyć lokalizację ręcznie.",
+        );
+        setSubmitting(false);
+        return;
       } finally {
-        setGeocoding(false);
+        setSubmitting(false);
       }
     }
 
     const data = {
       name: name.trim(),
-      address: address.trim(),
+      address: address.trim() || `${coordsLat!.toFixed(5)}, ${coordsLng!.toFixed(5)}`,
       lat: coordsLat!,
       lng: coordsLng!,
       phone: phone.trim() || undefined,
@@ -161,8 +200,20 @@ export function CustomerForm({ initial, editingId, onClose }: Props) {
     onClose();
   };
 
+  const busy = geocoding || submitting;
+
   return (
     <form onSubmit={submit} className="space-y-4 px-1 pb-6">
+      {formError && (
+        <div
+          role="alert"
+          className="flex gap-2 rounded-lg border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive"
+        >
+          <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+          <div className="leading-snug">{formError}</div>
+        </div>
+      )}
+
       <div className="space-y-1.5">
         <Label htmlFor="cf-name">{t.name} *</Label>
         <Input
@@ -181,37 +232,46 @@ export function CustomerForm({ initial, editingId, onClose }: Props) {
             id="cf-address"
             value={address}
             onChange={(e) => setAddress(e.target.value)}
-            required
+            placeholder="np. Marszałkowska 10, Warszawa"
             autoComplete="off"
           />
           <Button
             type="button"
             variant="secondary"
             onClick={handleGeocode}
-            disabled={geocoding || !address.trim()}
+            disabled={busy || !address.trim()}
             className="shrink-0"
           >
             {geocoding ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
+              <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
             ) : (
-              <MapPin className="h-4 w-4" />
+              <Search className="mr-1.5 h-4 w-4" />
             )}
+            Znajdź
           </Button>
         </div>
-        {lat != null && lng != null && (
-          <p className="text-xs text-muted-foreground">
-            {lat.toFixed(5)}, {lng.toFixed(5)}
+        {hasCoords && (
+          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            <MapPin className="h-3 w-3 text-primary" />
+            <span>
+              {lat!.toFixed(5)}, {lng!.toFixed(5)}
+            </span>
             {!address && (
               <Button
                 type="button"
                 variant="link"
                 size="sm"
-                className="px-1 h-auto"
+                className="h-auto px-1"
                 onClick={handleReverse}
               >
                 {t.reverseGeocode}
               </Button>
             )}
+          </div>
+        )}
+        {!hasCoords && (
+          <p className="text-xs text-muted-foreground">
+            Wpisz adres i kliknij „Znajdź”, albo długo naciśnij miejsce na mapie.
           </p>
         )}
       </div>
@@ -302,8 +362,8 @@ export function CustomerForm({ initial, editingId, onClose }: Props) {
         <Button type="button" variant="outline" onClick={onClose}>
           {t.cancel}
         </Button>
-        <Button type="submit" disabled={geocoding}>
-          {geocoding && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+        <Button type="submit" disabled={busy}>
+          {busy && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
           {t.save}
         </Button>
       </div>
