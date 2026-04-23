@@ -1,0 +1,79 @@
+import { CalendarClock, Map, Settings as SettingsIcon, Users } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { useT } from "@/lib/i18n";
+
+export type Tab = "map" | "customers" | "today" | "settings";
+
+interface Props {
+  active: Tab;
+  onChange: (t: Tab) => void;
+  variant: "bottom" | "top";
+}
+
+export function NavBar({ active, onChange, variant }: Props) {
+  const t = useT();
+  const items: Array<{ key: Tab; label: string; icon: JSX.Element }> = [
+    { key: "map", label: t.map, icon: <Map className="h-5 w-5" /> },
+    { key: "customers", label: t.customers, icon: <Users className="h-5 w-5" /> },
+    { key: "today", label: t.today, icon: <CalendarClock className="h-5 w-5" /> },
+    { key: "settings", label: t.settings, icon: <SettingsIcon className="h-5 w-5" /> },
+  ];
+
+  if (variant === "bottom") {
+    return (
+      <nav
+        className="fixed inset-x-0 bottom-0 z-[500] grid grid-cols-4 border-t bg-background/95 backdrop-blur pb-[env(safe-area-inset-bottom)] shadow-floating"
+        role="tablist"
+      >
+        {items.map((it) => (
+          <button
+            key={it.key}
+            role="tab"
+            aria-selected={active === it.key}
+            onClick={() => onChange(it.key)}
+            className={cn(
+              "flex min-h-[60px] flex-col items-center justify-center gap-0.5 py-2 text-[11px] font-medium transition-colors",
+              active === it.key
+                ? "text-primary"
+                : "text-muted-foreground hover:text-foreground",
+            )}
+          >
+            {it.icon}
+            <span>{it.label}</span>
+          </button>
+        ))}
+      </nav>
+    );
+  }
+
+  return (
+    <nav
+      className="sticky top-0 z-[500] flex items-center gap-1 border-b bg-background/95 px-4 py-2 backdrop-blur"
+      role="tablist"
+    >
+      <div className="mr-4 flex items-center gap-2 font-semibold">
+        <span className="grid h-7 w-7 place-items-center rounded-lg bg-primary text-primary-foreground">
+          <Map className="h-4 w-4" />
+        </span>
+        SerwisMap
+      </div>
+      {items.map((it) => (
+        <button
+          key={it.key}
+          role="tab"
+          aria-selected={active === it.key}
+          onClick={() => onChange(it.key)}
+          className={cn(
+            "flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+            active === it.key
+              ? "bg-primary/10 text-primary"
+              : "text-muted-foreground hover:bg-accent hover:text-foreground",
+          )}
+        >
+          {it.icon}
+          <span>{it.label}</span>
+        </button>
+      ))}
+    </nav>
+  );
+}
