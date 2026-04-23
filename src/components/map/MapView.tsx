@@ -22,7 +22,6 @@ import { differenceInCalendarDays, format } from "date-fns";
 
 interface MapViewProps {
   onSelectCustomer: (c: Customer) => void;
-  onEditCustomer: (c: Customer) => void;
   onAddAt: (lat: number, lng: number) => void;
   onAddNew: () => void;
   selectedId?: string | null;
@@ -77,7 +76,6 @@ function FlyTo({ lat, lng }: { lat: number; lng: number }) {
 
 export function MapView({
   onSelectCustomer,
-  onEditCustomer,
   onAddAt,
   onAddNew,
   selectedId,
@@ -190,24 +188,8 @@ export function MapView({
                     </Button>
                     <Button
                       size="sm"
-                      variant="outline"
-                      type="button"
                       className="h-8 flex-1 text-xs"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onSelectCustomer(c);
-                      }}
-                    >
-                      {t.details}
-                    </Button>
-                    <Button
-                      size="sm"
-                      type="button"
-                      className="h-8 flex-1 text-xs"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onEditCustomer(c);
-                      }}
+                      onClick={() => onSelectCustomer(c)}
                     >
                       {t.edit}
                     </Button>
