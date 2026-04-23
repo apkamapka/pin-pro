@@ -1,3 +1,5 @@
+@import "leaflet/dist/leaflet.css";
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -119,9 +121,6 @@
     -webkit-tap-highlight-color: transparent;
   }
 }
-
-/* Leaflet base */
-@import "leaflet/dist/leaflet.css";
 
 @layer components {
   .leaflet-container {
