@@ -39,7 +39,7 @@ const Index = () => {
     seedIfEmpty();
   }, [seedIfEmpty]);
 
-  // Keep detail sheet in sync with latest customer data
+  // Keep detail sheet in sync with latest customer data; close if customer is deleted
   useEffect(() => {
     if (sheet.kind === "detail" || sheet.kind === "edit") {
       const fresh = customers.find((c) => c.id === sheet.customer.id);
@@ -61,28 +61,37 @@ const Index = () => {
 
   const sheetSide = isMobile ? "bottom" : "right";
 
+  // Unique key forces remount of sheet body when mode changes (fixes edit flow)
+  const sheetKey =
+    sheet.kind === "detail"
+      ? `detail-${sheet.customer.id}`
+      : sheet.kind === "edit"
+        ? `edit-${sheet.customer.id}`
+        : sheet.kind === "add"
+          ? `add-${sheet.initial?.lat ?? "new"}-${sheet.initial?.lng ?? "new"}`
+          : "none";
+
   let sheetTitle = "";
   let sheetBody: JSX.Element | null = null;
   if (sheet.kind === "detail") {
-    sheetTitle = sheet.customer.name;
+    const fresh =
+      customers.find((c) => c.id === sheet.customer.id) ?? sheet.customer;
+    sheetTitle = fresh.name;
     sheetBody = (
       <CustomerDetail
-        customer={customers.find((c) => c.id === sheet.customer.id) ?? sheet.customer}
-        onEdit={() =>
-          setSheet({
-            kind: "edit",
-            customer:
-              customers.find((c) => c.id === sheet.customer.id) ?? sheet.customer,
-          })
-        }
+        key={sheetKey}
+        customer={fresh}
+        onEdit={() => setSheet({ kind: "edit", customer: fresh })}
         onClose={() => setSheet({ kind: "none" })}
       />
     );
   } else if (sheet.kind === "edit") {
-    const fresh = customers.find((c) => c.id === sheet.customer.id) ?? sheet.customer;
+    const fresh =
+      customers.find((c) => c.id === sheet.customer.id) ?? sheet.customer;
     sheetTitle = t.editCustomer;
     sheetBody = (
       <CustomerForm
+        key={sheetKey}
         initial={fresh}
         editingId={fresh.id}
         onClose={() => setSheet({ kind: "none" })}
@@ -92,6 +101,7 @@ const Index = () => {
     sheetTitle = t.addCustomer;
     sheetBody = (
       <CustomerForm
+        key={sheetKey}
         initial={sheet.initial}
         onClose={() => setSheet({ kind: "none" })}
       />
