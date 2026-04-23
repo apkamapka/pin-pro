@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import {
   Sheet,
   SheetContent,
+  SheetDescription,
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
@@ -72,11 +73,13 @@ const Index = () => {
           : "none";
 
   let sheetTitle = "";
+  let sheetDescription = "";
   let sheetBody: JSX.Element | null = null;
   if (sheet.kind === "detail") {
     const fresh =
       customers.find((c) => c.id === sheet.customer.id) ?? sheet.customer;
     sheetTitle = fresh.name;
+    sheetDescription = `Szczegóły klienta: ${fresh.address}`;
     sheetBody = (
       <CustomerDetail
         key={sheetKey}
@@ -89,6 +92,7 @@ const Index = () => {
     const fresh =
       customers.find((c) => c.id === sheet.customer.id) ?? sheet.customer;
     sheetTitle = t.editCustomer;
+    sheetDescription = "Zmien dane klienta i zapisz.";
     sheetBody = (
       <CustomerForm
         key={sheetKey}
@@ -99,6 +103,8 @@ const Index = () => {
     );
   } else if (sheet.kind === "add") {
     sheetTitle = t.addCustomer;
+    sheetDescription =
+      "Wypelnij formularz, aby dodac nowego klienta do mapy.";
     sheetBody = (
       <CustomerForm
         key={sheetKey}
@@ -152,6 +158,9 @@ const Index = () => {
         >
           <SheetHeader className="mb-2 text-left">
             <SheetTitle className="truncate pr-6">{sheetTitle}</SheetTitle>
+            <SheetDescription className="sr-only">
+              {sheetDescription}
+            </SheetDescription>
           </SheetHeader>
           {sheetBody}
         </SheetContent>
