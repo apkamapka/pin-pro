@@ -94,13 +94,26 @@ export function MapView({
     [customers, filter],
   );
 
+  // Auto-fit to show all customers on first load; fallback to Poland if none
+  const defaultCenter: [number, number] = useMemo(() => {
+    if (customers.length === 0) return [52.0, 19.0]; // Polska
+    const avgLat = customers.reduce((s, c) => s + c.lat, 0) / customers.length;
+    const avgLng = customers.reduce((s, c) => s + c.lng, 0) / customers.length;
+    return [avgLat, avgLng];
+  }, [customers.length]); // only recalc when count changes, not on every edit
+
+  const defaultZoom = customers.length === 0 ? 3 : 6;
+
   const selected = customers.find((c) => c.id === selectedId);
 
   return (
     <div className="relative h-full w-full">
       <MapContainer
-        center={[52.0, 19.0]}
-        zoom={6}
+        center={defaultCenter}
+        zoom={defaultZoom}
+        minZoom={2}
+        maxZoom={19}
+        worldCopyJump={true}
         className="h-full w-full"
         zoomControl={!isMobile}
         attributionControl={false}
@@ -108,6 +121,7 @@ export function MapView({
         <TileLayer
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           maxZoom={19}
+          noWrap={false}
         />
         <MapEvents onLongPress={onAddAt} />
         {selected && <FlyTo lat={selected.lat} lng={selected.lng} />}
