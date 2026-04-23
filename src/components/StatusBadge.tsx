@@ -1,3 +1,4 @@
+import { forwardRef } from "react";
 import { cn } from "@/lib/utils";
 import { useT } from "@/lib/i18n";
 import type { CustomerStatus } from "@/types/customer";
@@ -10,26 +11,29 @@ const COLOR_CLASS: Record<CustomerStatus, string> = {
   issue: "bg-status-issue text-status-issue-foreground",
 };
 
-export function StatusBadge({
-  status,
-  className,
-}: {
+interface BadgeProps {
   status: CustomerStatus;
   className?: string;
-}) {
-  const t = useT();
-  return (
-    <span
-      className={cn(
-        "inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium",
-        COLOR_CLASS[status],
-        className,
-      )}
-    >
-      {t.statuses[status]}
-    </span>
-  );
 }
+
+export const StatusBadge = forwardRef<HTMLSpanElement, BadgeProps>(
+  ({ status, className }, ref) => {
+    const t = useT();
+    return (
+      <span
+        ref={ref}
+        className={cn(
+          "inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium",
+          COLOR_CLASS[status],
+          className,
+        )}
+      >
+        {t.statuses[status]}
+      </span>
+    );
+  },
+);
+StatusBadge.displayName = "StatusBadge";
 
 const DOT_CLASS: Record<CustomerStatus, string> = {
   new: "bg-status-new",
@@ -39,20 +43,17 @@ const DOT_CLASS: Record<CustomerStatus, string> = {
   issue: "bg-status-issue",
 };
 
-export function StatusDot({
-  status,
-  className,
-}: {
-  status: CustomerStatus;
-  className?: string;
-}) {
-  return (
-    <span
-      className={cn(
-        "inline-block h-2.5 w-2.5 rounded-full",
-        DOT_CLASS[status],
-        className,
-      )}
-    />
-  );
-}
+export const StatusDot = forwardRef<
+  HTMLSpanElement,
+  { status: CustomerStatus; className?: string }
+>(({ status, className }, ref) => (
+  <span
+    ref={ref}
+    className={cn(
+      "inline-block h-2.5 w-2.5 rounded-full",
+      DOT_CLASS[status],
+      className,
+    )}
+  />
+));
+StatusDot.displayName = "StatusDot";
