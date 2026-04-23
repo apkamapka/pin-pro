@@ -188,10 +188,14 @@ export function MapView({
                     </Button>
                     <Button
                       size="sm"
+                      type="button"
                       className="h-8 flex-1 text-xs"
-                      onClick={() => onSelectCustomer(c)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onSelectCustomer(c);
+                      }}
                     >
-                      {t.edit}
+                      {t.details}
                     </Button>
                   </div>
                 </div>
