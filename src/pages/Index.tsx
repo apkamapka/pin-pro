@@ -55,6 +55,11 @@ const Index = () => {
     setSheet({ kind: "detail", customer: c });
   };
 
+  const openEdit = (c: Customer) => {
+    setFocusedId(c.id);
+    setSheet({ kind: "edit", customer: c });
+  };
+
   const openAdd = () => setSheet({ kind: "add" });
   const openAddAt = (lat: number, lng: number) =>
     setSheet({ kind: "add", initial: { lat, lng } });
@@ -114,6 +119,7 @@ const Index = () => {
         {tab === "map" && (
           <MapView
             onSelectCustomer={openDetail}
+            onEditCustomer={openEdit}
             onAddAt={openAddAt}
             onAddNew={openAdd}
             selectedId={focusedId}
