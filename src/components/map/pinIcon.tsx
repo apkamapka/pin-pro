@@ -14,8 +14,9 @@ import {
   type PinTone,
 } from "@/lib/pinColor";
 import type { ColorThresholds } from "@/types/customer";
+import { getIconByKey } from "@/lib/iconPalette";
 
-const ICONS: Record<Customer["status"], JSX.Element> = {
+const STATUS_ICONS: Record<Customer["status"], JSX.Element> = {
   new: <Sparkles size={16} strokeWidth={2.5} />,
   in_progress: <Wrench size={16} strokeWidth={2.5} />,
   done: <CheckCircle2 size={16} strokeWidth={2.5} />,
@@ -29,9 +30,15 @@ export function buildDivIcon(
   thresholds: ColorThresholds,
 ): L.DivIcon {
   const { color, pulse } = getPinAppearance(customer, today, thresholds);
-  const iconHtml = renderToStaticMarkup(
-    ICONS[customer.status] ?? <Clock size={16} strokeWidth={2.5} />,
+
+  // Priorytet: ręczny wybór ikony > ikona ze statusu > zegarek jako fallback.
+  const CustomIcon = getIconByKey(customer.icon);
+  const iconElement = CustomIcon ? (
+    <CustomIcon size={16} strokeWidth={2.5} />
+  ) : (
+    STATUS_ICONS[customer.status] ?? <Clock size={16} strokeWidth={2.5} />
   );
+  const iconHtml = renderToStaticMarkup(iconElement);
   const html = `<div class="serwis-pin${pulse ? " pulse" : ""}" style="background:${color}">${iconHtml}</div>`;
   return L.divIcon({
     html,
