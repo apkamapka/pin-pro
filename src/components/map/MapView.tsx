@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import {
   MapContainer,
   Marker,
@@ -8,17 +8,26 @@ import {
   useMapEvents,
 } from "react-leaflet";
 import L from "leaflet";
-import { Plus, Info, CalendarClock, MapPin, Phone } from "lucide-react";
+import {
+  Plus,
+  Info,
+  CalendarClock,
+  MapPin,
+  Phone,
+  Eye,
+  EyeOff,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useCustomers } from "@/store/customers";
 import { useT } from "@/lib/i18n";
-import type { Customer, CustomerStatus } from "@/types/customer";
+import type { Category, Customer } from "@/types/customer";
 import { buildDivIcon } from "@/components/map/pinIcon";
 import { cn } from "@/lib/utils";
 import { Legend } from "@/components/map/Legend";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { StatusBadge } from "@/components/StatusBadge";
+import { CategoryBadge, DoneBadge } from "@/components/CategoryBadge";
 import { differenceInCalendarDays, format } from "date-fns";
+import { ICON_PALETTE } from "@/lib/iconPalette";
 
 interface MapViewProps {
   onSelectCustomer: (c: Customer) => void;
@@ -27,14 +36,11 @@ interface MapViewProps {
   selectedId?: string | null;
 }
 
-const STATUS_FILTERS: Array<{ key: "all" | CustomerStatus; labelKey: string }> = [
-  { key: "all", labelKey: "all" },
-  { key: "new", labelKey: "new" },
-  { key: "in_progress", labelKey: "in_progress" },
-  { key: "done", labelKey: "done" },
-  { key: "warranty", labelKey: "warranty" },
-  { key: "issue", labelKey: "issue" },
-];
+/**
+ * Filtr: "all" (wszystkie) | "none" (bez kategorii) | id kategorii.
+ * Plus osobny toggle `showDone`.
+ */
+type Filter = "all" | "none" | string;
 
 function MapEvents({
   onLongPress,
@@ -42,11 +48,9 @@ function MapEvents({
   onLongPress: (lat: number, lng: number) => void;
 }) {
   const timer = useRef<number | null>(null);
-  const startPos = useRef<{ x: number; y: number } | null>(null);
 
   useMapEvents({
     mousedown(e) {
-      startPos.current = { x: e.originalEvent.clientX, y: e.originalEvent.clientY };
       if (timer.current) window.clearTimeout(timer.current);
       timer.current = window.setTimeout(() => {
         onLongPress(e.latlng.lat, e.latlng.lng);
@@ -82,28 +86,38 @@ export function MapView({
 }: MapViewProps) {
   const t = useT();
   const customers = useCustomers((s) => s.customers);
+  const categories = useCustomers((s) => s.categories);
   const thresholds = useCustomers((s) => s.thresholds);
-  const [filter, setFilter] = useState<"all" | CustomerStatus>("all");
+  const [filter, setFilter] = useState<Filter>("all");
+  const [showDone, setShowDone] = useState(false);
   const [legendOpen, setLegendOpen] = useState(false);
   const isMobile = useIsMobile();
 
   const today = useMemo(() => new Date(), []);
 
-  const filtered = useMemo(
-    () => (filter === "all" ? customers : customers.filter((c) => c.status === filter)),
-    [customers, filter],
+  // Map id -> Category (callback stabilny przez kategorie)
+  const categoryById = useCallback(
+    (id: string): Category | undefined => categories.find((c) => c.id === id),
+    [categories],
   );
 
-  // Auto-fit to show all customers on first load; fallback to Poland if none
+  const filtered = useMemo(() => {
+    return customers.filter((c) => {
+      if (!showDone && c.isDone) return false;
+      if (filter === "all") return true;
+      if (filter === "none") return !c.categoryId;
+      return c.categoryId === filter;
+    });
+  }, [customers, filter, showDone]);
+
   const defaultCenter: [number, number] = useMemo(() => {
-    if (customers.length === 0) return [52.0, 19.0]; // Polska
+    if (customers.length === 0) return [52.0, 19.0];
     const avgLat = customers.reduce((s, c) => s + c.lat, 0) / customers.length;
     const avgLng = customers.reduce((s, c) => s + c.lng, 0) / customers.length;
     return [avgLat, avgLng];
-  }, [customers.length]); // only recalc when count changes, not on every edit
+  }, [customers.length]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const defaultZoom = customers.length === 0 ? 3 : 6;
-
   const selected = customers.find((c) => c.id === selectedId);
 
   return (
@@ -135,7 +149,9 @@ export function MapView({
             <Marker
               key={c.id}
               position={[c.lat, c.lng]}
-              icon={buildDivIcon(c, today, thresholds) as L.DivIcon}
+              icon={
+                buildDivIcon(c, today, thresholds, categoryById) as L.DivIcon
+              }
             >
               <Popup
                 closeButton={false}
@@ -147,7 +163,10 @@ export function MapView({
                     <div className="font-semibold leading-tight text-foreground">
                       {c.name}
                     </div>
-                    <StatusBadge status={c.status} />
+                    <div className="flex flex-col items-end gap-1 shrink-0">
+                      <CategoryBadge categoryId={c.categoryId} />
+                      {c.isDone && <DoneBadge />}
+                    </div>
                   </div>
 
                   <div className="flex items-start gap-1.5 text-xs text-muted-foreground">
@@ -215,27 +234,86 @@ export function MapView({
         })}
       </MapContainer>
 
-      {/* Filter chips */}
+      {/* Filter chips – user-defined kategorie */}
       <div className="pointer-events-none absolute inset-x-0 top-0 z-[400] flex justify-center px-3 pt-3">
         <div
           className="chip-row pointer-events-auto flex max-w-full gap-2 overflow-x-auto rounded-full bg-background/95 p-1.5 shadow-floating backdrop-blur"
           role="tablist"
         >
-          {STATUS_FILTERS.map((f) => (
+          {/* "Wszystkie" */}
+          <button
+            onClick={() => setFilter("all")}
+            className={cn(
+              "shrink-0 rounded-full px-3.5 py-1.5 text-xs font-medium transition-colors",
+              filter === "all"
+                ? "bg-primary text-primary-foreground"
+                : "text-foreground hover:bg-accent",
+            )}
+          >
+            {t.all}
+          </button>
+
+          {/* Dynamiczne kategorie */}
+          {categories.map((cat) => {
+            const Icon = ICON_PALETTE.find((p) => p.key === cat.icon)?.Icon;
+            const active = filter === cat.id;
+            return (
+              <button
+                key={cat.id}
+                onClick={() => setFilter(cat.id)}
+                className={cn(
+                  "flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition-colors",
+                  active ? "text-white" : "text-foreground hover:bg-accent",
+                )}
+                style={active ? { backgroundColor: cat.color } : undefined}
+              >
+                {Icon && <Icon className="h-3.5 w-3.5" />}
+                <span>{cat.name}</span>
+              </button>
+            );
+          })}
+
+          {/* "Bez kategorii" – pokazujemy tylko jeśli są jakiekolwiek kategorie */}
+          {categories.length > 0 && (
             <button
-              key={f.key}
-              onClick={() => setFilter(f.key)}
+              onClick={() => setFilter("none")}
               className={cn(
                 "shrink-0 rounded-full px-3.5 py-1.5 text-xs font-medium transition-colors",
-                filter === f.key
+                filter === "none"
                   ? "bg-primary text-primary-foreground"
-                  : "text-foreground hover:bg-accent",
+                  : "text-muted-foreground hover:bg-accent",
               )}
             >
-              {f.key === "all" ? t.all : t.statuses[f.key]}
+              {t.categoryNone}
             </button>
-          ))}
+          )}
         </div>
+      </div>
+
+      {/* Toggle Show/Hide Done */}
+      <div className="absolute bottom-24 right-4 z-[400] sm:bottom-6">
+        {/* Placeholder – prawy dolny róg zajmuje FAB; toggle Done w lewym */}
+      </div>
+      <div className="absolute bottom-40 left-3 z-[400] sm:bottom-20">
+        <Button
+          size="sm"
+          variant="secondary"
+          className="shadow-floating"
+          onClick={() => setShowDone((v) => !v)}
+          aria-pressed={showDone}
+        >
+          {showDone ? (
+            <>
+              <EyeOff className="mr-1.5 h-4 w-4" />
+              {t.hideDone}
+            </>
+          ) : (
+            <>
+              <Eye className="mr-1.5 h-4 w-4" />
+              {t.showDone}
+            </>
+          )}
+        </Button>
       </div>
 
       {/* Legend toggle */}
