@@ -25,8 +25,8 @@ import {
 import { IconPicker } from "@/components/IconPicker";
 import { useT } from "@/lib/i18n";
 import { useCustomers } from "@/store/customers";
-import type { Customer, CustomerStatus } from "@/types/customer";
-import { isValidIconKey, type PinIconKey } from "@/lib/iconPalette";
+import type { Customer } from "@/types/customer";
+import { isValidIconKey, type PinIconKey, ICON_PALETTE } from "@/lib/iconPalette";
 import { geocodeAddress, reverseGeocode } from "@/lib/geocode";
 import { toast } from "sonner";
 
@@ -36,14 +36,6 @@ interface Props {
   onClose: () => void;
 }
 
-const STATUSES: CustomerStatus[] = [
-  "new",
-  "in_progress",
-  "done",
-  "warranty",
-  "issue",
-];
-
 function toLocalInput(iso?: string): string {
   if (!iso) return "";
   const d = new Date(iso);
@@ -51,11 +43,14 @@ function toLocalInput(iso?: string): string {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
+const NO_CATEGORY = "__none__"; // sentinel bo shadcn Select nie akceptuje pustych wartości
+
 export function CustomerForm({ initial, editingId, onClose }: Props) {
   const t = useT();
   const addCustomer = useCustomers((s) => s.addCustomer);
   const updateCustomer = useCustomers((s) => s.updateCustomer);
   const deleteCustomer = useCustomers((s) => s.deleteCustomer);
+  const categories = useCustomers((s) => s.categories);
 
   const [name, setName] = useState(initial?.name ?? "");
   const [company, setCompany] = useState(initial?.company ?? "");
@@ -67,8 +62,8 @@ export function CustomerForm({ initial, editingId, onClose }: Props) {
   const [phone2, setPhone2] = useState(initial?.phone2 ?? "");
   const [email, setEmail] = useState(initial?.email ?? "");
   const [website, setWebsite] = useState(initial?.website ?? "");
-  const [status, setStatus] = useState<CustomerStatus>(
-    (initial?.status as CustomerStatus) ?? "new",
+  const [categoryId, setCategoryId] = useState<string>(
+    initial?.categoryId ?? NO_CATEGORY,
   );
   const [icon, setIcon] = useState<PinIconKey>(
     isValidIconKey(initial?.icon) ? (initial!.icon as PinIconKey) : "auto",
@@ -102,7 +97,7 @@ export function CustomerForm({ initial, editingId, onClose }: Props) {
     setPhone2(initial?.phone2 ?? "");
     setEmail(initial?.email ?? "");
     setWebsite(initial?.website ?? "");
-    setStatus((initial?.status as CustomerStatus) ?? "new");
+    setCategoryId(initial?.categoryId ?? NO_CATEGORY);
     setIcon(
       isValidIconKey(initial?.icon) ? (initial!.icon as PinIconKey) : "auto",
     );
@@ -168,7 +163,7 @@ export function CustomerForm({ initial, editingId, onClose }: Props) {
     setFormError(null);
 
     if (!name.trim()) {
-      setFormError("Imię i nazwisko jest wymagane.");
+      setFormError(`${t.name}: ${t.requiredField}`);
       return;
     }
     if (!address.trim() && !hasCoords) {
@@ -220,7 +215,8 @@ export function CustomerForm({ initial, editingId, onClose }: Props) {
       phone2: phone2.trim() || undefined,
       email: email.trim() || undefined,
       website: website.trim() || undefined,
-      status,
+      categoryId: categoryId === NO_CATEGORY ? undefined : categoryId,
+      isDone: initial?.isDone ?? false,
       icon: icon === "auto" ? undefined : icon,
       nextAppointment: nextAppt
         ? new Date(nextAppt).toISOString()
@@ -269,6 +265,7 @@ export function CustomerForm({ initial, editingId, onClose }: Props) {
           id="cf-name"
           value={name}
           onChange={(e) => setName(e.target.value)}
+          placeholder={t.namePlaceholder}
           required
           autoComplete="off"
         />
@@ -348,20 +345,34 @@ export function CustomerForm({ initial, editingId, onClose }: Props) {
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div className="space-y-1.5">
-          <Label>{t.status} *</Label>
-          <Select
-            value={status}
-            onValueChange={(v) => setStatus(v as CustomerStatus)}
-          >
+          <Label>{t.category}</Label>
+          <Select value={categoryId} onValueChange={setCategoryId}>
             <SelectTrigger>
-              <SelectValue placeholder={t.selectStatus} />
+              <SelectValue placeholder={t.selectCategory} />
             </SelectTrigger>
             <SelectContent>
-              {STATUSES.map((s) => (
-                <SelectItem key={s} value={s}>
-                  {t.statuses[s]}
-                </SelectItem>
-              ))}
+              <SelectItem value={NO_CATEGORY}>
+                <span className="text-muted-foreground">
+                  {t.categoryNone}
+                </span>
+              </SelectItem>
+              {categories.map((c) => {
+                const Icon = ICON_PALETTE.find((p) => p.key === c.icon)?.Icon;
+                return (
+                  <SelectItem key={c.id} value={c.id}>
+                    <span className="flex items-center gap-2">
+                      <span
+                        className="grid h-4 w-4 place-items-center rounded-full text-white shrink-0"
+                        style={{ backgroundColor: c.color }}
+                        aria-hidden
+                      >
+                        {Icon && <Icon className="h-2.5 w-2.5" strokeWidth={3} />}
+                      </span>
+                      <span className="truncate">{c.name}</span>
+                    </span>
+                  </SelectItem>
+                );
+              })}
             </SelectContent>
           </Select>
         </div>
