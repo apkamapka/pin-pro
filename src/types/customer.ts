@@ -8,13 +8,18 @@ export type CustomerStatus =
 export interface Customer {
   id: string;
   name: string;
+  company?: string;
+  profession?: string;
   address: string;
   lat: number;
   lng: number;
   phone?: string;
+  phone2?: string;
   email?: string;
+  website?: string;
   notes?: string;
   status: CustomerStatus;
+  icon?: string; // klucz z palety ikon; brak = auto ze statusu
   nextAppointment?: string;
   lastVisit?: string;
   tags?: string[];
