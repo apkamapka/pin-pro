@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
+import { CategoryManager } from "@/components/CategoryManager";
 import { useCustomers } from "@/store/customers";
 import { useT, useI18n } from "@/lib/i18n";
 import { format } from "date-fns";
@@ -155,6 +156,10 @@ export function Settings() {
           max={90}
           onChange={(v) => setThresholds({ ...thresholds, later: v })}
         />
+      </section>
+
+      <section className="space-y-3">
+        <CategoryManager />
       </section>
 
       <section className="space-y-3">
