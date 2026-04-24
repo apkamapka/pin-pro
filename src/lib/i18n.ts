@@ -17,7 +17,12 @@ const dict = {
     delete: "Usuń",
     edit: "Edytuj",
     markDone: "Oznacz jako zakończone",
-    name: "Imię i nazwisko",
+    markActive: "Oznacz jako aktywne",
+
+    // Pole główne klienta — neutralne, bez "Imię i nazwisko"
+    name: "Nazwa",
+    namePlaceholder: "Imię, nazwa firmy, miejsca…",
+
     address: "Adres",
     geocode: "Geokoduj",
     phone: "Telefon",
@@ -28,7 +33,7 @@ const dict = {
     clientProfession: "Zawód / branża klienta",
     clientProfessionPlaceholder: "np. Nauczyciel, Lekarz, Kierowca",
     icon: "Ikona",
-    iconAuto: "Auto (ze statusu)",
+    iconAuto: "Auto (z kategorii)",
     iconNames: {
       auto: "Auto",
       wrench: "Klucz",
@@ -48,23 +53,45 @@ const dict = {
     },
     moreFields: "Więcej pól",
     hideFields: "Zwiń",
-    status: "Status",
-    nextAppointment: "Następna wizyta",
-    lastVisit: "Ostatnia wizyta",
+
+    // Termin
+    nextAppointment: "Następny kontakt",
+    lastVisit: "Ostatni kontakt",
     notes: "Notatki",
     tags: "Tagi (oddzielone przecinkami)",
-    statuses: {
-      new: "Nowy",
-      in_progress: "W trakcie",
-      done: "Zakończone",
-      warranty: "Gwarancja",
-      issue: "Awaria",
-    },
+
+    // Filtry na mapie / stany
     all: "Wszystkie",
+    active: "Aktywne",
+    stateDone: "Zakończone",
+    stateActive: "Aktywne",
+    showDone: "Pokaż zakończone",
+    hideDone: "Ukryj zakończone",
+
+    // Kategorie
+    categories: "Kategorie",
+    category: "Kategoria",
+    categoryNone: "Bez kategorii",
+    selectCategory: "Wybierz kategorię",
+    categoryName: "Nazwa kategorii",
+    categoryNamePlaceholder: "np. Awaria, Pacjent VIP, Rodzina",
+    categoryColor: "Kolor",
+    categoryIcon: "Ikona",
+    categoryAdd: "Dodaj kategorię",
+    categoryAdded: "Dodano kategorię",
+    categoryRemoved: "Usunięto kategorię",
+    categoryUpdated: "Zapisano kategorię",
+    categoryRemoveConfirm:
+      "Usunąć tę kategorię? Klienci którzy ją mieli, stracą przypisanie (sami klienci zostaną).",
+    categoriesEmpty:
+      "Nie masz jeszcze żadnych kategorii. Dodaj swoją pierwszą — np. „Awaria”, „Pacjenci stali”, „Rodzina”.",
+    categoriesHint:
+      "Twoje kategorie zastępują sztywne statusy. Każda ma swoją nazwę, ikonę i kolor — a Ty przypisujesz je do klientów.",
+
     overdue: "Przeterminowane",
     todayGroup: "Dziś",
     thisWeek: "W tym tygodniu",
-    noAppointment: "Brak zaplanowanej wizyty",
+    noAppointment: "Brak zaplanowanego kontaktu",
     daysUntil: (n: number) =>
       n === 0
         ? "Dziś"
@@ -76,11 +103,11 @@ const dict = {
     search: "Szukaj klientów…",
     sortBy: "Sortuj",
     sortName: "Po nazwie",
-    sortAppt: "Po wizycie",
-    sortLast: "Po ostatniej wizycie",
+    sortAppt: "Po terminie",
+    sortLast: "Po ostatnim kontakcie",
     emptyTitle: "Brak klientów",
     emptyHint: "Dodaj swojego pierwszego klienta, aby rozpocząć.",
-    emptyTodayTitle: "Brak wizyt na ten tydzień",
+    emptyTodayTitle: "Brak kontaktów na ten tydzień",
     emptyTodayHint: "Wszystko pod kontrolą. Dobra robota!",
     navigate: "Nawiguj",
     callPhone: "Zadzwoń",
@@ -92,10 +119,8 @@ const dict = {
     legendUpcoming: "8–14 dni",
     legendLater: "15–30 dni",
     legendFuture: "30+ dni",
-    legendIssue: "Awaria",
+    legendNoDate: "Brak terminu",
     legendDone: "Zakończone",
-    legendNew: "Nowy",
-    legendWarranty: "Gwarancja",
     exportData: "Eksportuj dane",
     importData: "Importuj dane",
     clearAll: "Wyczyść wszystkie dane",
@@ -128,10 +153,10 @@ const dict = {
     imported: "Zaimportowano",
     exported: "Wyeksportowano",
     cleared: "Wyczyszczono",
-    longPressHint: "Wskazówka: dotknij i przytrzymaj mapę, aby dodać klienta w danym miejscu.",
+    longPressHint:
+      "Wskazówka: dotknij i przytrzymaj mapę, aby dodać klienta w danym miejscu.",
     history: "Historia",
     created: "Utworzono",
-    selectStatus: "Wybierz status",
     requiredField: "Pole wymagane",
     importMode: "Tryb importu",
     importMerge: "Scal",
@@ -155,7 +180,11 @@ const dict = {
     delete: "Delete",
     edit: "Edit",
     markDone: "Mark as done",
+    markActive: "Mark as active",
+
     name: "Name",
+    namePlaceholder: "Person, company, place…",
+
     address: "Address",
     geocode: "Geocode",
     phone: "Phone",
@@ -166,7 +195,7 @@ const dict = {
     clientProfession: "Client profession / industry",
     clientProfessionPlaceholder: "e.g. Teacher, Doctor, Driver",
     icon: "Icon",
-    iconAuto: "Auto (from status)",
+    iconAuto: "Auto (from category)",
     iconNames: {
       auto: "Auto",
       wrench: "Wrench",
@@ -186,23 +215,42 @@ const dict = {
     },
     moreFields: "More fields",
     hideFields: "Hide",
-    status: "Status",
-    nextAppointment: "Next appointment",
-    lastVisit: "Last visit",
+
+    nextAppointment: "Next contact",
+    lastVisit: "Last contact",
     notes: "Notes",
     tags: "Tags (comma separated)",
-    statuses: {
-      new: "New",
-      in_progress: "In progress",
-      done: "Done",
-      warranty: "Warranty",
-      issue: "Issue",
-    },
+
     all: "All",
+    active: "Active",
+    stateDone: "Done",
+    stateActive: "Active",
+    showDone: "Show done",
+    hideDone: "Hide done",
+
+    categories: "Categories",
+    category: "Category",
+    categoryNone: "No category",
+    selectCategory: "Select category",
+    categoryName: "Category name",
+    categoryNamePlaceholder: "e.g. Urgent, VIP, Family",
+    categoryColor: "Color",
+    categoryIcon: "Icon",
+    categoryAdd: "Add category",
+    categoryAdded: "Category added",
+    categoryRemoved: "Category removed",
+    categoryUpdated: "Category saved",
+    categoryRemoveConfirm:
+      "Remove this category? Clients assigned to it will lose the assignment (the clients themselves stay).",
+    categoriesEmpty:
+      "You don't have any categories yet. Add your first one — e.g. “Urgent”, “Regular patients”, “Family”.",
+    categoriesHint:
+      "Your categories replace rigid statuses. Each has a name, icon and color — and you assign them to clients.",
+
     overdue: "Overdue",
     todayGroup: "Today",
     thisWeek: "This week",
-    noAppointment: "No appointment scheduled",
+    noAppointment: "No contact scheduled",
     daysUntil: (n: number) =>
       n === 0
         ? "Today"
@@ -214,8 +262,8 @@ const dict = {
     search: "Search customers…",
     sortBy: "Sort",
     sortName: "By name",
-    sortAppt: "By appointment",
-    sortLast: "By last visit",
+    sortAppt: "By due date",
+    sortLast: "By last contact",
     emptyTitle: "No customers yet",
     emptyHint: "Add your first customer to get started.",
     emptyTodayTitle: "Nothing scheduled this week",
@@ -230,10 +278,8 @@ const dict = {
     legendUpcoming: "8–14 days",
     legendLater: "15–30 days",
     legendFuture: "30+ days",
-    legendIssue: "Issue",
+    legendNoDate: "No date",
     legendDone: "Done",
-    legendNew: "New",
-    legendWarranty: "Warranty",
     exportData: "Export data",
     importData: "Import data",
     clearAll: "Clear all data",
@@ -265,10 +311,10 @@ const dict = {
     imported: "Imported",
     exported: "Exported",
     cleared: "Cleared",
-    longPressHint: "Tip: long-press the map to add a customer at that spot.",
+    longPressHint:
+      "Tip: long-press the map to add a customer at that spot.",
     history: "History",
     created: "Created",
-    selectStatus: "Select status",
     requiredField: "Required field",
     importMode: "Import mode",
     importMerge: "Merge",
