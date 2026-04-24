@@ -128,24 +128,6 @@
     font-family: inherit;
   }
 
-  /* Themed popup */
-  .leaflet-popup-content-wrapper {
-    @apply rounded-xl border border-border bg-card text-card-foreground;
-    box-shadow: var(--shadow-floating);
-    padding: 0.5rem;
-  }
-  .leaflet-popup-content {
-    margin: 0.25rem 0.5rem !important;
-    line-height: 1.4;
-  }
-  .leaflet-popup-tip {
-    background: hsl(var(--card));
-    box-shadow: var(--shadow-floating);
-  }
-  .leaflet-popup-close-button {
-    color: hsl(var(--muted-foreground)) !important;
-  }
-
   .serwis-pin {
     @apply flex items-center justify-center rounded-full text-white;
     width: 32px;
@@ -171,4 +153,35 @@
     scrollbar-width: none;
   }
   .chip-row::-webkit-scrollbar { display: none; }
+}
+
+/* ---------------------------------------------------------------------------
+ * Leaflet popup overrides — POZA @layer components.
+ * Reason: w Tailwind v3 reguły w @layer components mają niższy priorytet
+ * niż zwykły CSS z importu (leaflet.css). Bez tego w dark mode popup
+ * zostawał z domyślnym białym tłem i jasnym tekstem = nieczytelny.
+ * ------------------------------------------------------------------------- */
+.leaflet-popup-content-wrapper {
+  background: hsl(var(--card));
+  color: hsl(var(--card-foreground));
+  border: 1px solid hsl(var(--border));
+  border-radius: 0.75rem;
+  box-shadow: var(--shadow-floating);
+  padding: 0.5rem;
+}
+.leaflet-popup-content {
+  margin: 0.25rem 0.5rem !important;
+  line-height: 1.4;
+  color: hsl(var(--card-foreground));
+}
+.leaflet-popup-tip {
+  background: hsl(var(--card));
+  border: 1px solid hsl(var(--border));
+  box-shadow: var(--shadow-floating);
+}
+.leaflet-popup-close-button {
+  color: hsl(var(--muted-foreground)) !important;
+}
+.leaflet-popup-close-button:hover {
+  color: hsl(var(--foreground)) !important;
 }
