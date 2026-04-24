@@ -10,7 +10,8 @@ export type Theme = "light" | "dark" | "system";
 interface CustomersState {
   customers: Customer[];
   thresholds: ColorThresholds;
-  profession: string;
+  professions: string[];
+  activeProfession: string | null;
   theme: Theme;
   seeded: boolean;
 
@@ -24,7 +25,9 @@ interface CustomersState {
   exportCustomers: () => Customer[];
   clearAll: () => void;
   setThresholds: (t: ColorThresholds) => void;
-  setProfession: (p: string) => void;
+  addProfession: (p: string) => "added" | "exists" | "invalid";
+  removeProfession: (p: string) => void;
+  setActiveProfession: (p: string | null) => void;
   setTheme: (t: Theme) => void;
   seedIfEmpty: () => void;
 }
@@ -34,7 +37,8 @@ export const useCustomers = create<CustomersState>()(
     (set, get) => ({
       customers: [],
       thresholds: DEFAULT_THRESHOLDS,
-      profession: "custom",
+      professions: [],
+      activeProfession: null,
       theme: "system",
       seeded: false,
 
@@ -94,7 +98,41 @@ export const useCustomers = create<CustomersState>()(
       clearAll: () => set({ customers: [] }),
 
       setThresholds: (thresholds) => set({ thresholds }),
-      setProfession: (profession) => set({ profession }),
+
+      addProfession: (raw) => {
+        const p = raw.trim();
+        if (!p) return "invalid";
+        const list = get().professions;
+        const exists = list.some(
+          (x) => x.toLocaleLowerCase() === p.toLocaleLowerCase(),
+        );
+        if (exists) {
+          // still mark as active
+          const canonical = list.find(
+            (x) => x.toLocaleLowerCase() === p.toLocaleLowerCase(),
+          )!;
+          set({ activeProfession: canonical });
+          return "exists";
+        }
+        set({
+          professions: [...list, p],
+          activeProfession: p,
+        });
+        return "added";
+      },
+
+      removeProfession: (p) => {
+        const list = get().professions.filter((x) => x !== p);
+        const active = get().activeProfession;
+        set({
+          professions: list,
+          activeProfession:
+            active === p ? (list[0] ?? null) : active,
+        });
+      },
+
+      setActiveProfession: (p) => set({ activeProfession: p }),
+
       setTheme: (theme) => set({ theme }),
 
       seedIfEmpty: () => {
@@ -108,7 +146,30 @@ export const useCustomers = create<CustomersState>()(
     }),
     {
       name: "serwismap-data",
-      version: 1,
+      version: 2,
+      migrate: (persisted: unknown, fromVersion: number) => {
+        const state = (persisted ?? {}) as Record<string, unknown>;
+        if (fromVersion < 2) {
+          // v1 miał { profession: string } z presetem ("custom"|"hvac"|...)
+          // w v2 mamy { professions: string[], activeProfession: string | null }
+          // Presety porzucamy — "custom" traktujemy jak pustą listę.
+          // Jeśli ktoś wpisał coś własnego (nieobecne w presetach), zachowujemy.
+          const PRESETS = new Set([
+            "custom",
+            "hvac",
+            "sales",
+            "medical",
+            "realestate",
+            "insurance",
+          ]);
+          const old = typeof state.profession === "string" ? state.profession : "";
+          const keep = old && !PRESETS.has(old) ? [old] : [];
+          delete state.profession;
+          state.professions = keep;
+          state.activeProfession = keep[0] ?? null;
+        }
+        return state as CustomersState;
+      },
     },
   ),
 );
