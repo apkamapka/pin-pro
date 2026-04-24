@@ -1,18 +1,17 @@
 import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useT } from "@/lib/i18n";
-import { TONE_HEX } from "@/components/map/pinIcon";
+import { TONE_HEX } from "@/lib/pinColor";
 import type { PinTone } from "@/lib/pinColor";
 
-const ROWS: Array<{ tone: PinTone; key: keyof ReturnType<typeof useT> }> = [
-  { tone: "overdue", key: "legendOverdue" },
-  { tone: "soon", key: "legendSoon" },
-  { tone: "upcoming", key: "legendUpcoming" },
-  { tone: "later", key: "legendLater" },
-  { tone: "future", key: "legendFuture" },
-  { tone: "issue", key: "legendIssue" },
-  { tone: "warranty", key: "legendWarranty" },
-  { tone: "done", key: "legendDone" },
+const ROWS: Array<{ tone: PinTone; labelKey: keyof ReturnType<typeof useT> }> = [
+  { tone: "overdue", labelKey: "legendOverdue" },
+  { tone: "soon", labelKey: "legendSoon" },
+  { tone: "upcoming", labelKey: "legendUpcoming" },
+  { tone: "later", labelKey: "legendLater" },
+  { tone: "future", labelKey: "legendFuture" },
+  { tone: "noDate", labelKey: "legendNoDate" },
+  { tone: "done", labelKey: "legendDone" },
 ];
 
 export function Legend({ onClose }: { onClose: () => void }) {
@@ -38,7 +37,7 @@ export function Legend({ onClose }: { onClose: () => void }) {
               className="h-3.5 w-3.5 rounded-full border-2 border-white shadow-pin"
               style={{ background: TONE_HEX[r.tone] }}
             />
-            <span>{t[r.key] as string}</span>
+            <span>{t[r.labelKey] as string}</span>
           </li>
         ))}
       </ul>
