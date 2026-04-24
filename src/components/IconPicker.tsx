@@ -8,8 +8,9 @@ interface Props {
 }
 
 /**
- * Grid palety ikon. Pierwszy slot to "Auto" (fallback na ikonę statusu).
- * Aktywna ikona jest podświetlona. Klik = zmiana.
+ * Grid palety ikon. Pierwszy slot to "Auto" – wtedy ikona pinu leci z kategorii
+ * (a jeśli nie ma kategorii, z neutralnej szpilki). Aktywna ikona jest
+ * podświetlona. Klik = zmiana.
  */
 export function IconPicker({ value, onChange }: Props) {
   const t = useT();
