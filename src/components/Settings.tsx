@@ -1,23 +1,17 @@
-import { useRef } from "react";
-import { Download, Moon, Sun, Trash2, Upload } from "lucide-react";
+import { useRef, useState, type KeyboardEvent } from "react";
+import { Check, Download, Moon, Sun, Trash2, Upload, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { useCustomers } from "@/store/customers";
 import { useT, useI18n } from "@/lib/i18n";
 import { format } from "date-fns";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 import type { Customer } from "@/types/customer";
 import type { Theme } from "@/store/customers";
 
-const PROFESSIONS = ["custom", "hvac", "sales", "medical", "realestate", "insurance"] as const;
 const APP_VERSION = "1.0.0";
 
 export function Settings() {
@@ -30,11 +24,15 @@ export function Settings() {
   const clearAll = useCustomers((s) => s.clearAll);
   const thresholds = useCustomers((s) => s.thresholds);
   const setThresholds = useCustomers((s) => s.setThresholds);
-  const profession = useCustomers((s) => s.profession);
-  const setProfession = useCustomers((s) => s.setProfession);
+  const profession = useCustomers((s) => s.activeProfession);
+  const professions = useCustomers((s) => s.professions);
+  const addProfession = useCustomers((s) => s.addProfession);
+  const removeProfession = useCustomers((s) => s.removeProfession);
+  const setActiveProfession = useCustomers((s) => s.setActiveProfession);
   const theme = useCustomers((s) => s.theme);
   const setTheme = useCustomers((s) => s.setTheme);
   const fileRef = useRef<HTMLInputElement>(null);
+  const [draft, setDraft] = useState("");
 
   const handleExport = () => {
     const data = exportCustomers();
@@ -77,6 +75,31 @@ export function Settings() {
     if (!window.confirm(t.clearAllConfirm)) return;
     clearAll();
     toast.success(t.cleared);
+  };
+
+  const handleAddProfession = () => {
+    const p = draft.trim();
+    if (!p) return;
+    const res = addProfession(p);
+    if (res === "added") {
+      toast.success(t.professionAdded);
+      setDraft("");
+    } else if (res === "exists") {
+      toast.info(t.professionExists);
+      setDraft("");
+    }
+  };
+
+  const handleProfessionKey = (e: KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      handleAddProfession();
+    }
+  };
+
+  const handleRemoveProfession = (p: string) => {
+    removeProfession(p);
+    toast.success(t.professionRemoved);
   };
 
   return (
@@ -134,20 +157,77 @@ export function Settings() {
         />
       </section>
 
-      <section className="space-y-2">
+      <section className="space-y-3">
         <Label>{t.profession}</Label>
-        <Select value={profession} onValueChange={setProfession}>
-          <SelectTrigger>
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {PROFESSIONS.map((p) => (
-              <SelectItem key={p} value={p}>
-                {t.professions[p as keyof typeof t.professions]}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <div className="flex gap-2">
+          <Input
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            onKeyDown={handleProfessionKey}
+            placeholder={t.professionPlaceholder}
+            maxLength={60}
+          />
+          <Button
+            type="button"
+            onClick={handleAddProfession}
+            disabled={!draft.trim()}
+            variant="outline"
+          >
+            {t.professionAdd}
+          </Button>
+        </div>
+        <div className="space-y-1">
+          <div className="text-xs font-medium text-muted-foreground">
+            {t.yourProfessions}
+          </div>
+          {professions.length === 0 ? (
+            <p className="text-xs text-muted-foreground italic">
+              {t.professionsEmpty}
+            </p>
+          ) : (
+            <ul className="space-y-1">
+              {professions.map((p) => {
+                const isActive = p === profession;
+                return (
+                  <li
+                    key={p}
+                    className={cn(
+                      "flex items-center gap-2 rounded-lg border px-3 py-2 transition-colors",
+                      isActive
+                        ? "border-primary/50 bg-accent text-accent-foreground"
+                        : "border-border hover:bg-muted",
+                    )}
+                  >
+                    <button
+                      type="button"
+                      onClick={() => setActiveProfession(p)}
+                      className="flex flex-1 items-center gap-2 text-left text-sm"
+                      aria-pressed={isActive}
+                    >
+                      <Check
+                        className={cn(
+                          "h-4 w-4 shrink-0",
+                          isActive ? "opacity-100" : "opacity-0",
+                        )}
+                      />
+                      <span className="truncate">{p}</span>
+                    </button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => handleRemoveProfession(p)}
+                      aria-label={`${t.professionRemove}: ${p}`}
+                      className="h-7 w-7 shrink-0 text-muted-foreground hover:text-destructive"
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </div>
       </section>
 
       <section className="space-y-2">
