@@ -166,6 +166,58 @@ const dict = {
     light: "Jasny",
     dark: "Ciemny",
     system: "Systemowy",
+
+    // --- Pakiet A: Zdjęcia ---
+    photos: "Zdjęcia",
+    photosEmpty: "Brak zdjęć. Dodaj pierwsze z aparatu albo z galerii.",
+    photoAdd: "Dodaj zdjęcie",
+    photoTake: "Zrób zdjęcie",
+    photoChoose: "Wybierz z galerii",
+    photoProcessing: "Przetwarzam zdjęcie…",
+    photoRemoved: "Usunięto zdjęcie",
+    photoRemoveConfirm: "Usunąć to zdjęcie?",
+    photoFailed: "Nie udało się dodać zdjęcia.",
+    photoFullscreenClose: "Zamknij",
+
+    // --- Pakiet A: Notatki głosowe ---
+    voiceNotes: "Notatki głosowe",
+    voiceNotesEmpty: "Brak nagrań. Kliknij „Nagraj”, aby dodać pierwsze.",
+    voiceRecord: "Nagraj",
+    voiceStop: "Zatrzymaj",
+    voiceRecording: "Nagrywam…",
+    voiceRemoved: "Usunięto nagranie",
+    voiceRemoveConfirm: "Usunąć to nagranie?",
+    voiceMicDenied:
+      "Brak dostępu do mikrofonu. Sprawdź uprawnienia przeglądarki.",
+    voiceNotSupported: "Ta przeglądarka nie obsługuje nagrywania dźwięku.",
+    voiceMaxReached: "Maksymalna długość nagrania to 60 sekund.",
+    voiceFailed: "Nie udało się zapisać nagrania.",
+
+    // --- Pakiet A: Oś czasu ---
+    timeline: "Oś czasu",
+    timelineEmpty:
+      "Brak wpisów. Dodaj pierwszy wpis – wizytę, telefon, problem lub naprawę.",
+    timelineAdd: "Dodaj wpis",
+    timelineDate: "Data",
+    timelineKind: "Typ",
+    timelineText: "Opis",
+    timelineTextPlaceholder: "Co się wydarzyło?",
+    timelineSave: "Dodaj",
+    timelineRemoved: "Usunięto wpis",
+    timelineRemoveConfirm: "Usunąć ten wpis?",
+    timelineKinds: {
+      visit: "Wizyta",
+      note: "Notatka",
+      call: "Telefon",
+      issue: "Problem",
+      fix: "Naprawa",
+      other: "Inne",
+    },
+
+    // --- Wspólne dla Pakietu A ---
+    storageFull:
+      "Brak miejsca w pamięci przeglądarki. Usuń kilka zdjęć lub nagrań i spróbuj ponownie.",
+    size: "Rozmiar",
   },
   en: {
     appName: "SerwisMap",
@@ -324,6 +376,57 @@ const dict = {
     light: "Light",
     dark: "Dark",
     system: "System",
+
+    // --- Package A: Photos ---
+    photos: "Photos",
+    photosEmpty: "No photos yet. Add your first from camera or gallery.",
+    photoAdd: "Add photo",
+    photoTake: "Take photo",
+    photoChoose: "From gallery",
+    photoProcessing: "Processing photo…",
+    photoRemoved: "Photo removed",
+    photoRemoveConfirm: "Remove this photo?",
+    photoFailed: "Failed to add photo.",
+    photoFullscreenClose: "Close",
+
+    // --- Package A: Voice notes ---
+    voiceNotes: "Voice notes",
+    voiceNotesEmpty: "No recordings yet. Tap “Record” to add your first.",
+    voiceRecord: "Record",
+    voiceStop: "Stop",
+    voiceRecording: "Recording…",
+    voiceRemoved: "Recording removed",
+    voiceRemoveConfirm: "Remove this recording?",
+    voiceMicDenied: "Microphone access denied. Check browser permissions.",
+    voiceNotSupported: "This browser doesn't support audio recording.",
+    voiceMaxReached: "Maximum recording length is 60 seconds.",
+    voiceFailed: "Failed to save recording.",
+
+    // --- Package A: Timeline ---
+    timeline: "Timeline",
+    timelineEmpty:
+      "No entries yet. Add your first — visit, call, issue or fix.",
+    timelineAdd: "Add entry",
+    timelineDate: "Date",
+    timelineKind: "Type",
+    timelineText: "Description",
+    timelineTextPlaceholder: "What happened?",
+    timelineSave: "Add",
+    timelineRemoved: "Entry removed",
+    timelineRemoveConfirm: "Remove this entry?",
+    timelineKinds: {
+      visit: "Visit",
+      note: "Note",
+      call: "Call",
+      issue: "Issue",
+      fix: "Fix",
+      other: "Other",
+    },
+
+    // --- Shared for Package A ---
+    storageFull:
+      "Browser storage is full. Remove some photos or recordings and try again.",
+    size: "Size",
   },
 } as const;
 
