@@ -7,13 +7,14 @@ import {
   Mail,
   MapPin,
   Phone,
+  RotateCcw,
   Trash2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useT } from "@/lib/i18n";
 import { useCustomers } from "@/store/customers";
 import type { Customer } from "@/types/customer";
-import { StatusBadge } from "@/components/StatusBadge";
+import { CategoryBadge, DoneBadge } from "@/components/CategoryBadge";
 import { toast } from "sonner";
 
 interface Props {
@@ -24,7 +25,7 @@ interface Props {
 
 export function CustomerDetail({ customer, onEdit, onClose }: Props) {
   const t = useT();
-  const setStatus = useCustomers((s) => s.setStatus);
+  const setDone = useCustomers((s) => s.setDone);
   const deleteCustomer = useCustomers((s) => s.deleteCustomer);
 
   const days = customer.nextAppointment
@@ -34,7 +35,12 @@ export function CustomerDetail({ customer, onEdit, onClose }: Props) {
   const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${customer.lat},${customer.lng}`;
 
   const handleDone = () => {
-    setStatus(customer.id, "done");
+    setDone(customer.id, true);
+    toast.success(t.saved);
+  };
+
+  const handleReopen = () => {
+    setDone(customer.id, false);
     toast.success(t.saved);
   };
 
@@ -65,7 +71,10 @@ export function CustomerDetail({ customer, onEdit, onClose }: Props) {
             {customer.profession && <span>{customer.profession}</span>}
           </div>
         )}
-        <StatusBadge status={customer.status} />
+        <div className="flex flex-wrap items-center gap-1.5">
+          <CategoryBadge categoryId={customer.categoryId} />
+          {customer.isDone && <DoneBadge />}
+        </div>
       </div>
 
       <div className="rounded-xl bg-accent/40 p-4 text-center">
@@ -184,7 +193,7 @@ export function CustomerDetail({ customer, onEdit, onClose }: Props) {
       </div>
 
       <div className="sticky bottom-0 -mx-1 space-y-2 border-t bg-background/95 px-1 pt-3 pb-1 backdrop-blur">
-        {customer.status !== "done" && (
+        {!customer.isDone ? (
           <Button
             variant="default"
             onClick={handleDone}
@@ -192,6 +201,15 @@ export function CustomerDetail({ customer, onEdit, onClose }: Props) {
           >
             <CheckCircle2 className="mr-2 h-4 w-4" />
             {t.markDone}
+          </Button>
+        ) : (
+          <Button
+            variant="outline"
+            onClick={handleReopen}
+            className="w-full"
+          >
+            <RotateCcw className="mr-2 h-4 w-4" />
+            {t.markActive}
           </Button>
         )}
         <div className="grid grid-cols-2 gap-2">
