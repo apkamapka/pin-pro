@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { addDays } from "date-fns";
-import { getPinTone } from "@/lib/pinColor";
-import type { Customer } from "@/types/customer";
+import { getPinTone, getPinAppearance } from "@/lib/pinColor";
+import type { Category, Customer } from "@/types/customer";
 
 const today = new Date("2025-01-15T12:00:00Z");
 
@@ -11,7 +11,7 @@ const base: Customer = {
   address: "x",
   lat: 0,
   lng: 0,
-  status: "new",
+  isDone: false,
   createdAt: today.toISOString(),
   updatedAt: today.toISOString(),
 };
@@ -20,14 +20,14 @@ describe("getPinTone", () => {
   it("done overrides everything", () => {
     expect(
       getPinTone(
-        { ...base, status: "done", nextAppointment: addDays(today, -5).toISOString() },
+        {
+          ...base,
+          isDone: true,
+          nextAppointment: addDays(today, -5).toISOString(),
+        },
         today,
       ),
     ).toBe("done");
-  });
-
-  it("issue is always issue", () => {
-    expect(getPinTone({ ...base, status: "issue" }, today)).toBe("issue");
   });
 
   it("overdue when past appointment", () => {
@@ -75,8 +75,63 @@ describe("getPinTone", () => {
     ).toBe("future");
   });
 
-  it("falls back to status when no appointment", () => {
-    expect(getPinTone({ ...base, status: "warranty" }, today)).toBe("warranty");
-    expect(getPinTone({ ...base, status: "in_progress" }, today)).toBe("progress");
+  it("noDate when no appointment", () => {
+    expect(getPinTone(base, today)).toBe("noDate");
+  });
+});
+
+describe("getPinAppearance with categories", () => {
+  const urgentCat: Category = {
+    id: "cat-urgent",
+    name: "Urgent",
+    icon: "alert",
+    color: "#ff00ff", // magenta do łatwej weryfikacji
+  };
+
+  const categoryById = (id: string): Category | undefined =>
+    id === "cat-urgent" ? urgentCat : undefined;
+
+  it("noDate + category falls back to category color", () => {
+    const app = getPinAppearance(
+      { ...base, categoryId: "cat-urgent" },
+      today,
+      undefined,
+      categoryById,
+    );
+    expect(app.tone).toBe("noDate");
+    expect(app.color).toBe("#ff00ff");
+  });
+
+  it("overdue wins over category color", () => {
+    const app = getPinAppearance(
+      {
+        ...base,
+        categoryId: "cat-urgent",
+        nextAppointment: addDays(today, -3).toISOString(),
+      },
+      today,
+      undefined,
+      categoryById,
+    );
+    expect(app.tone).toBe("overdue");
+    expect(app.color).not.toBe("#ff00ff");
+  });
+
+  it("done wins even over category", () => {
+    const app = getPinAppearance(
+      { ...base, isDone: true, categoryId: "cat-urgent" },
+      today,
+      undefined,
+      categoryById,
+    );
+    expect(app.tone).toBe("done");
+  });
+
+  it("overdue pulses", () => {
+    const app = getPinAppearance(
+      { ...base, nextAppointment: addDays(today, -1).toISOString() },
+      today,
+    );
+    expect(app.pulse).toBe(true);
   });
 });
