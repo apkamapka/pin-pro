@@ -1,7 +1,9 @@
 import { differenceInCalendarDays, format } from "date-fns";
 import {
+  Briefcase,
   CheckCircle2,
   Edit2,
+  Globe,
   Mail,
   MapPin,
   Phone,
@@ -49,6 +51,20 @@ export function CustomerDetail({ customer, onEdit, onClose }: Props) {
         <h2 className="text-2xl font-semibold leading-tight">
           {customer.name}
         </h2>
+        {(customer.company || customer.profession) && (
+          <div className="text-sm text-muted-foreground">
+            {customer.company && (
+              <span className="inline-flex items-center gap-1.5">
+                <Briefcase className="h-3.5 w-3.5" />
+                {customer.company}
+              </span>
+            )}
+            {customer.company && customer.profession && (
+              <span className="mx-1.5">·</span>
+            )}
+            {customer.profession && <span>{customer.profession}</span>}
+          </div>
+        )}
         <StatusBadge status={customer.status} />
       </div>
 
@@ -100,6 +116,16 @@ export function CustomerDetail({ customer, onEdit, onClose }: Props) {
           </a>
         )}
 
+        {customer.phone2 && (
+          <a
+            href={`tel:${customer.phone2}`}
+            className="flex items-center gap-3 rounded-lg p-2 -mx-2 hover:bg-accent/40 transition-colors"
+          >
+            <Phone className="h-4 w-4 text-muted-foreground" />
+            <span className="text-sm">{customer.phone2}</span>
+          </a>
+        )}
+
         {customer.email && (
           <a
             href={`mailto:${customer.email}`}
@@ -107,6 +133,20 @@ export function CustomerDetail({ customer, onEdit, onClose }: Props) {
           >
             <Mail className="h-4 w-4 text-muted-foreground" />
             <span className="text-sm">{customer.email}</span>
+          </a>
+        )}
+
+        {customer.website && (
+          <a
+            href={customer.website}
+            target="_blank"
+            rel="noreferrer"
+            className="flex items-center gap-3 rounded-lg p-2 -mx-2 hover:bg-accent/40 transition-colors"
+          >
+            <Globe className="h-4 w-4 text-muted-foreground" />
+            <span className="text-sm text-primary break-all">
+              {customer.website}
+            </span>
           </a>
         )}
       </div>
@@ -143,23 +183,27 @@ export function CustomerDetail({ customer, onEdit, onClose }: Props) {
         </div>
       </div>
 
-      <div className="sticky bottom-0 -mx-1 grid grid-cols-3 gap-2 border-t bg-background/95 px-1 pt-3 pb-1 backdrop-blur">
-        <Button variant="outline" onClick={onEdit}>
-          <Edit2 className="mr-1.5 h-4 w-4" />
-          {t.edit}
-        </Button>
-        <Button
-          variant="outline"
-          onClick={handleDone}
-          disabled={customer.status === "done"}
-        >
-          <CheckCircle2 className="mr-1.5 h-4 w-4" />
-          {t.markDone}
-        </Button>
-        <Button variant="destructive" onClick={handleDelete}>
-          <Trash2 className="mr-1.5 h-4 w-4" />
-          {t.delete}
-        </Button>
+      <div className="sticky bottom-0 -mx-1 space-y-2 border-t bg-background/95 px-1 pt-3 pb-1 backdrop-blur">
+        {customer.status !== "done" && (
+          <Button
+            variant="default"
+            onClick={handleDone}
+            className="w-full"
+          >
+            <CheckCircle2 className="mr-2 h-4 w-4" />
+            {t.markDone}
+          </Button>
+        )}
+        <div className="grid grid-cols-2 gap-2">
+          <Button variant="outline" onClick={onEdit}>
+            <Edit2 className="mr-1.5 h-4 w-4" />
+            {t.edit}
+          </Button>
+          <Button variant="destructive" onClick={handleDelete}>
+            <Trash2 className="mr-1.5 h-4 w-4" />
+            {t.delete}
+          </Button>
+        </div>
       </div>
     </div>
   );
