@@ -6,6 +6,9 @@ import type {
   ColorThresholds,
   Customer,
   LegacyCustomerStatus,
+  MediaAttachment,
+  TimelineEntry,
+  TimelineKind,
 } from "@/types/customer";
 import { DEFAULT_THRESHOLDS } from "@/types/customer";
 import { buildSampleCustomers } from "@/lib/sampleData";
@@ -38,6 +41,31 @@ interface CustomersState {
   updateCategory: (id: string, patch: Partial<Omit<Category, "id">>) => void;
   removeCategory: (id: string) => void;
   reorderCategories: (ids: string[]) => void;
+
+  // --- Pakiet A ---
+  // Photos
+  addPhoto: (
+    customerId: string,
+    data: Omit<MediaAttachment, "id" | "createdAt">,
+  ) => MediaAttachment | null;
+  removePhoto: (customerId: string, photoId: string) => void;
+  // Voice notes
+  addVoiceNote: (
+    customerId: string,
+    data: Omit<MediaAttachment, "id" | "createdAt">,
+  ) => MediaAttachment | null;
+  removeVoiceNote: (customerId: string, voiceId: string) => void;
+  // Timeline
+  addTimelineEntry: (
+    customerId: string,
+    data: Omit<TimelineEntry, "id" | "createdAt">,
+  ) => TimelineEntry | null;
+  updateTimelineEntry: (
+    customerId: string,
+    entryId: string,
+    patch: Partial<Pick<TimelineEntry, "date" | "kind" | "text">>,
+  ) => void;
+  removeTimelineEntry: (customerId: string, entryId: string) => void;
 
   // Other settings
   setThresholds: (t: ColorThresholds) => void;
@@ -160,6 +188,145 @@ export const useCustomers = create<CustomersState>()(
         set({ categories: ordered });
       },
 
+      // --- Pakiet A: photos ---
+      addPhoto: (customerId, data) => {
+        const customer = get().customers.find((c) => c.id === customerId);
+        if (!customer) return null;
+        const now = new Date().toISOString();
+        const photo: MediaAttachment = {
+          ...data,
+          id: uuidv4(),
+          createdAt: now,
+        };
+        set({
+          customers: get().customers.map((c) =>
+            c.id === customerId
+              ? {
+                  ...c,
+                  photos: [...(c.photos ?? []), photo],
+                  updatedAt: now,
+                }
+              : c,
+          ),
+        });
+        return photo;
+      },
+
+      removePhoto: (customerId, photoId) => {
+        const now = new Date().toISOString();
+        set({
+          customers: get().customers.map((c) =>
+            c.id === customerId
+              ? {
+                  ...c,
+                  photos: (c.photos ?? []).filter((p) => p.id !== photoId),
+                  updatedAt: now,
+                }
+              : c,
+          ),
+        });
+      },
+
+      // --- Pakiet A: voice notes ---
+      addVoiceNote: (customerId, data) => {
+        const customer = get().customers.find((c) => c.id === customerId);
+        if (!customer) return null;
+        const now = new Date().toISOString();
+        const voice: MediaAttachment = {
+          ...data,
+          id: uuidv4(),
+          createdAt: now,
+        };
+        set({
+          customers: get().customers.map((c) =>
+            c.id === customerId
+              ? {
+                  ...c,
+                  voiceNotes: [...(c.voiceNotes ?? []), voice],
+                  updatedAt: now,
+                }
+              : c,
+          ),
+        });
+        return voice;
+      },
+
+      removeVoiceNote: (customerId, voiceId) => {
+        const now = new Date().toISOString();
+        set({
+          customers: get().customers.map((c) =>
+            c.id === customerId
+              ? {
+                  ...c,
+                  voiceNotes: (c.voiceNotes ?? []).filter(
+                    (v) => v.id !== voiceId,
+                  ),
+                  updatedAt: now,
+                }
+              : c,
+          ),
+        });
+      },
+
+      // --- Pakiet A: timeline ---
+      addTimelineEntry: (customerId, data) => {
+        const customer = get().customers.find((c) => c.id === customerId);
+        if (!customer) return null;
+        const now = new Date().toISOString();
+        const entry: TimelineEntry = {
+          ...data,
+          id: uuidv4(),
+          createdAt: now,
+        };
+        set({
+          customers: get().customers.map((c) =>
+            c.id === customerId
+              ? {
+                  ...c,
+                  timeline: [...(c.timeline ?? []), entry],
+                  updatedAt: now,
+                  // Jeśli dodajemy wpis typu "visit", zaktualizuj lastVisit
+                  // gdy jest świeższy niż obecny.
+                  lastVisit: mergeLastVisit(c.lastVisit, entry),
+                }
+              : c,
+          ),
+        });
+        return entry;
+      },
+
+      updateTimelineEntry: (customerId, entryId, patch) => {
+        const now = new Date().toISOString();
+        set({
+          customers: get().customers.map((c) =>
+            c.id === customerId
+              ? {
+                  ...c,
+                  timeline: (c.timeline ?? []).map((e) =>
+                    e.id === entryId ? { ...e, ...patch } : e,
+                  ),
+                  updatedAt: now,
+                }
+              : c,
+          ),
+        });
+      },
+
+      removeTimelineEntry: (customerId, entryId) => {
+        const now = new Date().toISOString();
+        set({
+          customers: get().customers.map((c) =>
+            c.id === customerId
+              ? {
+                  ...c,
+                  timeline: (c.timeline ?? []).filter((e) => e.id !== entryId),
+                  updatedAt: now,
+                }
+              : c,
+          ),
+        });
+      },
+
       setThresholds: (thresholds) => set({ thresholds }),
 
       addProfession: (raw) => {
@@ -207,7 +374,7 @@ export const useCustomers = create<CustomersState>()(
     }),
     {
       name: "serwismap-data",
-      version: 3,
+      version: 4,
       migrate: (persisted: unknown, fromVersion: number) => {
         const state = (persisted ?? {}) as Record<string, unknown>;
 
@@ -259,8 +426,36 @@ export const useCustomers = create<CustomersState>()(
           if (!Array.isArray(state.categories)) state.categories = [];
         }
 
+        // --- v3 -> v4: pakiet A (photos / voiceNotes / timeline) ---
+        // Pola są opcjonalne, więc migracja jest "no-op" – wystarczy,
+        // że bumpujemy wersję. Przy okazji normalizujemy shape, żeby
+        // nigdy nie czytać niczego dziwnego ze starszych wersji.
+        if (fromVersion < 4) {
+          const arr = Array.isArray(state.customers)
+            ? (state.customers as Array<Record<string, unknown>>)
+            : [];
+          state.customers = arr.map((c) => ({
+            ...c,
+            photos: Array.isArray(c.photos) ? c.photos : undefined,
+            voiceNotes: Array.isArray(c.voiceNotes) ? c.voiceNotes : undefined,
+            timeline: Array.isArray(c.timeline) ? c.timeline : undefined,
+          }));
+        }
+
         return state as CustomersState;
       },
     },
   ),
 );
+
+function mergeLastVisit(
+  current: string | undefined,
+  entry: TimelineEntry,
+): string | undefined {
+  if (entry.kind !== "visit") return current;
+  if (!current) return entry.date;
+  return new Date(entry.date) > new Date(current) ? entry.date : current;
+}
+
+// re-eksport dla wygody importów w innych plikach (jeżeli potrzebne)
+export type { TimelineKind };
