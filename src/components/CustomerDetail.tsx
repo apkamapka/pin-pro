@@ -15,6 +15,9 @@ import { useT } from "@/lib/i18n";
 import { useCustomers } from "@/store/customers";
 import type { Customer } from "@/types/customer";
 import { CategoryBadge, DoneBadge } from "@/components/CategoryBadge";
+import { PhotosSection } from "@/components/PhotosSection";
+import { VoiceNotesSection } from "@/components/VoiceNotesSection";
+import { TimelineSection } from "@/components/TimelineSection";
 import { toast } from "sonner";
 
 interface Props {
@@ -179,18 +182,30 @@ export function CustomerDetail({ customer, onEdit, onClose }: Props) {
         </div>
       )}
 
-      <div className="space-y-1 text-xs text-muted-foreground">
-        <div className="font-medium uppercase tracking-wide">{t.history}</div>
-        {customer.lastVisit && (
-          <div>
-            {t.lastVisit}:{" "}
-            {format(new Date(customer.lastVisit), "dd.MM.yyyy")}
-          </div>
-        )}
-        <div>
-          {t.created}: {format(new Date(customer.createdAt), "dd.MM.yyyy")}
+      {/* Pakiet A: Zdjęcia */}
+      <PhotosSection
+        customerId={customer.id}
+        photos={customer.photos ?? []}
+      />
+
+      {/* Pakiet A: Notatki głosowe */}
+      <VoiceNotesSection
+        customerId={customer.id}
+        voiceNotes={customer.voiceNotes ?? []}
+      />
+
+      {/* Pakiet A: Oś czasu (zastępuje starą sekcję "Historia") */}
+      <TimelineSection
+        customerId={customer.id}
+        timeline={customer.timeline ?? []}
+        customerCreatedAt={customer.createdAt}
+      />
+
+      {customer.lastVisit && (
+        <div className="text-xs text-muted-foreground">
+          {t.lastVisit}: {format(new Date(customer.lastVisit), "dd.MM.yyyy")}
         </div>
-      </div>
+      )}
 
       <div className="sticky bottom-0 -mx-1 space-y-2 border-t bg-background/95 px-1 pt-3 pb-1 backdrop-blur">
         {!customer.isDone ? (
