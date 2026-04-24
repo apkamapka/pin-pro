@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/select";
 import { useCustomers } from "@/store/customers";
 import { useT } from "@/lib/i18n";
-import { StatusDot } from "@/components/StatusBadge";
+import { CategoryDot } from "@/components/CategoryBadge";
 import { format, differenceInCalendarDays } from "date-fns";
 import type { Customer } from "@/types/customer";
 
@@ -108,7 +108,11 @@ export function CustomersList({ onSelectCustomer, onAddNew }: Props) {
                 onClick={() => onSelectCustomer(c)}
                 className="flex w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-accent/40 min-h-[60px]"
               >
-                <StatusDot status={c.status} className="shrink-0" />
+                <CategoryDot
+                  categoryId={c.categoryId}
+                  isDone={c.isDone}
+                  className="shrink-0"
+                />
                 <div className="min-w-0 flex-1">
                   <div className="truncate text-sm font-medium">{c.name}</div>
                   <div className="truncate text-xs text-muted-foreground">
