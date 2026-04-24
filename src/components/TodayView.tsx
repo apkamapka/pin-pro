@@ -32,7 +32,7 @@ interface Group {
 export function TodayView({ onSelectCustomer }: Props) {
   const t = useT();
   const customers = useCustomers((s) => s.customers);
-  const setStatus = useCustomers((s) => s.setStatus);
+  const setDone = useCustomers((s) => s.setDone);
 
   const groups = useMemo<Group[]>(() => {
     const today = startOfToday();
@@ -41,7 +41,7 @@ export function TodayView({ onSelectCustomer }: Props) {
     const week: Customer[] = [];
 
     for (const c of customers) {
-      if (!c.nextAppointment || c.status === "done") continue;
+      if (!c.nextAppointment || c.isDone) continue;
       const apptDate = new Date(c.nextAppointment);
       const days = differenceInCalendarDays(apptDate, today);
       if (days < 0) overdue.push(c);
@@ -83,7 +83,7 @@ export function TodayView({ onSelectCustomer }: Props) {
   }
 
   const handleDone = (id: string) => {
-    setStatus(id, "done");
+    setDone(id, true);
     toast.success(t.saved);
   };
 
