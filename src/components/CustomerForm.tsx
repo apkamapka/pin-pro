@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   AlertCircle,
   Briefcase,
@@ -23,11 +23,13 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { IconPicker } from "@/components/IconPicker";
+import { TagsInput } from "@/components/TagsInput";
 import { useT } from "@/lib/i18n";
 import { useCustomers } from "@/store/customers";
 import type { Customer } from "@/types/customer";
 import { isValidIconKey, type PinIconKey, ICON_PALETTE } from "@/lib/iconPalette";
 import { geocodeAddress, reverseGeocode } from "@/lib/geocode";
+import { collectAllTags } from "@/lib/searchCustomers";
 import { toast } from "sonner";
 
 interface Props {
@@ -51,6 +53,10 @@ export function CustomerForm({ initial, editingId, onClose }: Props) {
   const updateCustomer = useCustomers((s) => s.updateCustomer);
   const deleteCustomer = useCustomers((s) => s.deleteCustomer);
   const categories = useCustomers((s) => s.categories);
+  const allCustomers = useCustomers((s) => s.customers);
+  const tagSuggestions = collectAllTags(allCustomers);
+
+  const nameRef = useRef<HTMLInputElement>(null);
 
   const [name, setName] = useState(initial?.name ?? "");
   const [company, setCompany] = useState(initial?.company ?? "");
@@ -72,7 +78,7 @@ export function CustomerForm({ initial, editingId, onClose }: Props) {
     toLocalInput(initial?.nextAppointment),
   );
   const [notes, setNotes] = useState(initial?.notes ?? "");
-  const [tags, setTags] = useState((initial?.tags ?? []).join(", "));
+  const [tags, setTags] = useState<string[]>(initial?.tags ?? []);
   const [geocoding, setGeocoding] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
@@ -103,7 +109,7 @@ export function CustomerForm({ initial, editingId, onClose }: Props) {
     );
     setNextAppt(toLocalInput(initial?.nextAppointment));
     setNotes(initial?.notes ?? "");
-    setTags((initial?.tags ?? []).join(", "));
+    setTags(initial?.tags ?? []);
     setFormError(null);
     setMoreOpen(
       Boolean(
@@ -115,7 +121,50 @@ export function CustomerForm({ initial, editingId, onClose }: Props) {
     );
   }, [initial, editingId]);
 
+  /**
+   * Quick-add z GPS: jeśli formularz dostał lat/lng (z mapy lub GPS),
+   * a adres jest pusty, w tle pobierz adres przez reverse geocode.
+   * Robione raz, po pierwszym mount/update z tymi danymi.
+   */
+  useEffect(() => {
+    let cancelled = false;
+    const shouldAutoReverse =
+      !editingId &&
+      initial?.lat != null &&
+      initial?.lng != null &&
+      !initial?.address;
+    if (!shouldAutoReverse) return;
+
+    setGeocoding(true);
+    reverseGeocode(initial.lat as number, initial.lng as number)
+      .then((r) => {
+        if (cancelled) return;
+        if (r) setAddress(r);
+      })
+      .catch(() => {
+        // Cisza – user może uzupełnić ręcznie. Toast byłby tu nachalny.
+      })
+      .finally(() => {
+        if (!cancelled) setGeocoding(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initial?.lat, initial?.lng, editingId]);
+
   const hasCoords = lat != null && lng != null;
+
+  // Auto-focus pola nazwy w trybie "quick-add" (mamy współrzędne, brak nazwy).
+  // Bez tego serwisant w aucie musiałby kliknąć w input zanim zacznie pisać.
+  useEffect(() => {
+    if (!editingId && initial?.lat != null && initial?.lng != null && !initial?.name) {
+      // krótki delay – Sheet ma transition, fokus przed nim się gubi
+      const id = window.setTimeout(() => nameRef.current?.focus(), 250);
+      return () => window.clearTimeout(id);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editingId]);
 
   const handleGeocode = async () => {
     if (!address.trim()) {
@@ -222,10 +271,7 @@ export function CustomerForm({ initial, editingId, onClose }: Props) {
         ? new Date(nextAppt).toISOString()
         : undefined,
       notes: notes.trim() || undefined,
-      tags: tags
-        .split(",")
-        .map((s) => s.trim())
-        .filter(Boolean),
+      tags: tags.length > 0 ? tags : undefined,
     };
 
     if (editingId) {
@@ -263,6 +309,7 @@ export function CustomerForm({ initial, editingId, onClose }: Props) {
         <Label htmlFor="cf-name">{t.name} *</Label>
         <Input
           id="cf-name"
+          ref={nameRef}
           value={name}
           onChange={(e) => setName(e.target.value)}
           placeholder={t.namePlaceholder}
@@ -475,11 +522,12 @@ export function CustomerForm({ initial, editingId, onClose }: Props) {
 
       <div className="space-y-1.5">
         <Label htmlFor="cf-tags">{t.tags}</Label>
-        <Input
+        <TagsInput
           id="cf-tags"
           value={tags}
-          onChange={(e) => setTags(e.target.value)}
-          placeholder="np. piec, gaz"
+          onChange={setTags}
+          suggestions={tagSuggestions}
+          placeholder={t.tagsPlaceholder}
         />
       </div>
 
