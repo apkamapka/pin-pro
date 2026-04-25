@@ -1,5 +1,12 @@
 import { useRef, useState } from "react";
-import { Camera, Image as ImageIcon, Loader2, Plus, Trash2, X } from "lucide-react";
+import {
+  Camera,
+  Image as ImageIcon,
+  Loader2,
+  Star,
+  Trash2,
+  X,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -22,12 +29,14 @@ import { cn } from "@/lib/utils";
 interface Props {
   customerId: string;
   photos: MediaAttachment[];
+  thumbnailPhotoId: string | undefined;
 }
 
-export function PhotosSection({ customerId, photos }: Props) {
+export function PhotosSection({ customerId, photos, thumbnailPhotoId }: Props) {
   const t = useT();
   const addPhoto = useCustomers((s) => s.addPhoto);
   const removePhoto = useCustomers((s) => s.removePhoto);
+  const setThumbnail = useCustomers((s) => s.setThumbnail);
 
   const cameraRef = useRef<HTMLInputElement>(null);
   const galleryRef = useRef<HTMLInputElement>(null);
@@ -72,6 +81,18 @@ export function PhotosSection({ customerId, photos }: Props) {
     if (viewing?.id === id) setViewing(null);
   };
 
+  const handleToggleThumbnail = (id: string) => {
+    if (thumbnailPhotoId === id) {
+      setThumbnail(customerId, undefined);
+      toast.success(t.photoThumbnailCleared);
+    } else {
+      setThumbnail(customerId, id);
+      toast.success(t.photoThumbnailSet);
+    }
+  };
+
+  const currentThumbnailId = thumbnailPhotoId;
+
   return (
     <section className="space-y-3">
       <div className="flex items-center justify-between">
@@ -89,22 +110,33 @@ export function PhotosSection({ customerId, photos }: Props) {
         <p className="text-sm text-muted-foreground">{t.photosEmpty}</p>
       ) : (
         <div className="grid grid-cols-3 gap-2">
-          {photos.map((p) => (
-            <button
-              key={p.id}
-              type="button"
-              onClick={() => setViewing(p)}
-              className="group relative aspect-square overflow-hidden rounded-lg border bg-muted focus:outline-none focus:ring-2 focus:ring-ring"
-              aria-label={format(new Date(p.createdAt), "dd.MM.yyyy HH:mm")}
-            >
-              <img
-                src={p.dataUrl}
-                alt=""
-                className="h-full w-full object-cover transition-transform group-hover:scale-105"
-                loading="lazy"
-              />
-            </button>
-          ))}
+          {photos.map((p) => {
+            const isThumb = currentThumbnailId === p.id;
+            return (
+              <button
+                key={p.id}
+                type="button"
+                onClick={() => setViewing(p)}
+                className="group relative aspect-square overflow-hidden rounded-lg border bg-muted focus:outline-none focus:ring-2 focus:ring-ring"
+                aria-label={format(new Date(p.createdAt), "dd.MM.yyyy HH:mm")}
+              >
+                <img
+                  src={p.dataUrl}
+                  alt=""
+                  className="h-full w-full object-cover transition-transform group-hover:scale-105"
+                  loading="lazy"
+                />
+                {isThumb && (
+                  <div
+                    className="absolute left-1.5 top-1.5 rounded-full bg-primary/90 p-1 text-primary-foreground shadow-sm"
+                    aria-label={t.photoIsThumbnail}
+                  >
+                    <Star className="h-3 w-3 fill-current" />
+                  </div>
+                )}
+              </button>
+            );
+          })}
         </div>
       )}
 
@@ -184,14 +216,32 @@ export function PhotosSection({ customerId, photos }: Props) {
                 alt=""
                 className="max-h-[80dvh] w-full object-contain"
               />
-              <div className="flex items-center justify-between gap-2 border-t p-3">
+              <div className="flex flex-wrap items-center justify-between gap-2 border-t p-3">
                 <div className="text-xs text-muted-foreground">
                   {format(new Date(viewing.createdAt), "dd.MM.yyyy HH:mm")}
                   {viewing.approxBytes != null && (
                     <> · {formatApproxSize(viewing.approxBytes)}</>
                   )}
                 </div>
-                <div className="flex gap-2">
+                <div className="flex flex-wrap gap-2">
+                  <Button
+                    type="button"
+                    variant={
+                      currentThumbnailId === viewing.id ? "default" : "outline"
+                    }
+                    size="sm"
+                    onClick={() => handleToggleThumbnail(viewing.id)}
+                  >
+                    <Star
+                      className={cn(
+                        "mr-1.5 h-4 w-4",
+                        currentThumbnailId === viewing.id && "fill-current",
+                      )}
+                    />
+                    {currentThumbnailId === viewing.id
+                      ? t.photoUnsetThumbnail
+                      : t.photoSetThumbnail}
+                  </Button>
                   <Button
                     type="button"
                     variant="destructive"
@@ -219,6 +269,3 @@ export function PhotosSection({ customerId, photos }: Props) {
     </section>
   );
 }
-
-// keep unused-imports quiet in case we add FAB later
-void Plus;
