@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { ChevronRight, Search, Users } from "lucide-react";
+import { ChevronRight, Hash, Search, Users, X } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
@@ -14,6 +14,8 @@ import { useT } from "@/lib/i18n";
 import { CategoryDot } from "@/components/CategoryBadge";
 import { format, differenceInCalendarDays } from "date-fns";
 import type { Customer } from "@/types/customer";
+import { collectAllTags, searchCustomers } from "@/lib/searchCustomers";
+import { cn } from "@/lib/utils";
 
 interface Props {
   onSelectCustomer: (c: Customer) => void;
@@ -25,20 +27,31 @@ type Sort = "name" | "appt" | "last";
 export function CustomersList({ onSelectCustomer, onAddNew }: Props) {
   const t = useT();
   const customers = useCustomers((s) => s.customers);
+  const categories = useCustomers((s) => s.categories);
   const [q, setQ] = useState("");
   const [sort, setSort] = useState<Sort>("appt");
+  /** Aktywne filtry tagów – AND. Pusty zbiór = bez filtra. */
+  const [activeTags, setActiveTags] = useState<Set<string>>(new Set());
+
+  const allTags = useMemo(() => collectAllTags(customers), [customers]);
 
   const items = useMemo(() => {
-    const term = q.trim().toLowerCase();
-    let arr = customers;
-    if (term) {
-      arr = arr.filter(
-        (c) =>
-          c.name.toLowerCase().includes(term) ||
-          c.address.toLowerCase().includes(term) ||
-          (c.phone ?? "").toLowerCase().includes(term),
+    // Najpierw search (szuka też w tagach), potem filtr aktywnych tagów (AND).
+    let arr = searchCustomers(customers, q, { categories });
+
+    if (activeTags.size > 0) {
+      const requiredLower = new Set(
+        Array.from(activeTags, (t) => t.toLocaleLowerCase()),
       );
+      arr = arr.filter((c) => {
+        const cTags = (c.tags ?? []).map((t) => t.toLocaleLowerCase());
+        for (const required of requiredLower) {
+          if (!cTags.includes(required)) return false;
+        }
+        return true;
+      });
     }
+
     arr = [...arr].sort((a, b) => {
       if (sort === "name") return a.name.localeCompare(b.name);
       if (sort === "appt") {
@@ -51,7 +64,18 @@ export function CustomersList({ onSelectCustomer, onAddNew }: Props) {
       return bx - ax;
     });
     return arr;
-  }, [customers, q, sort]);
+  }, [customers, categories, q, sort, activeTags]);
+
+  const toggleTag = (tag: string) => {
+    setActiveTags((prev) => {
+      const next = new Set(prev);
+      if (next.has(tag)) next.delete(tag);
+      else next.add(tag);
+      return next;
+    });
+  };
+
+  const clearTags = () => setActiveTags(new Set());
 
   if (customers.length === 0) {
     return (
@@ -95,6 +119,42 @@ export function CustomersList({ onSelectCustomer, onAddNew }: Props) {
             {items.length}
           </span>
         </div>
+
+        {/* Tag chips – multi-select. Pokazujemy tylko jeśli są jakiekolwiek tagi. */}
+        {allTags.length > 0 && (
+          <div className="-mx-3 flex items-center gap-1.5 overflow-x-auto px-3 pb-1">
+            {activeTags.size > 0 && (
+              <button
+                type="button"
+                onClick={clearTags}
+                className="shrink-0 rounded-full border border-dashed border-muted-foreground/40 px-2.5 py-1 text-xs text-muted-foreground hover:bg-accent"
+              >
+                <X className="-ml-0.5 mr-0.5 inline h-3 w-3" />
+                {t.clearFilter}
+              </button>
+            )}
+            {allTags.map((tag) => {
+              const active = activeTags.has(tag);
+              return (
+                <button
+                  key={tag}
+                  type="button"
+                  onClick={() => toggleTag(tag)}
+                  className={cn(
+                    "inline-flex shrink-0 items-center gap-1 rounded-full border px-2.5 py-1 text-xs transition-colors",
+                    active
+                      ? "border-primary bg-primary text-primary-foreground"
+                      : "border-border bg-background text-foreground hover:bg-accent",
+                  )}
+                  aria-pressed={active}
+                >
+                  <Hash className="h-3 w-3 opacity-70" />
+                  {tag}
+                </button>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       <ul className="flex-1 divide-y overflow-y-auto">
@@ -118,6 +178,11 @@ export function CustomersList({ onSelectCustomer, onAddNew }: Props) {
                   <div className="truncate text-xs text-muted-foreground">
                     {c.address}
                   </div>
+                  {c.tags && c.tags.length > 0 && (
+                    <div className="mt-0.5 truncate text-[11px] text-muted-foreground">
+                      {c.tags.map((t) => `#${t}`).join(" ")}
+                    </div>
+                  )}
                 </div>
                 <div className="text-right">
                   {c.nextAppointment && (
