@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { addDays } from "date-fns";
-import { getPinTone, getPinAppearance } from "@/lib/pinColor";
+import { getPinTone, getPinAppearance, getToneRange } from "@/lib/pinColor";
 import type { Category, Customer } from "@/types/customer";
 
 const today = new Date("2025-01-15T12:00:00Z");
@@ -133,5 +133,42 @@ describe("getPinAppearance with categories", () => {
       today,
     );
     expect(app.pulse).toBe(true);
+  });
+});
+
+describe("getToneRange", () => {
+  const thresholds = { soon: 3, upcoming: 10, later: 19 };
+
+  it("soon starts at 0 and ends at threshold.soon", () => {
+    expect(getToneRange("soon", thresholds)).toEqual({ from: 0, to: 3 });
+  });
+
+  it("upcoming starts at soon+1 and ends at upcoming", () => {
+    expect(getToneRange("upcoming", thresholds)).toEqual({ from: 4, to: 10 });
+  });
+
+  it("later starts at upcoming+1 and ends at later", () => {
+    expect(getToneRange("later", thresholds)).toEqual({ from: 11, to: 19 });
+  });
+
+  it("future is open-ended past later", () => {
+    expect(getToneRange("future", thresholds)).toEqual({
+      from: 20,
+      to: null,
+    });
+  });
+
+  it("returns undefined for non-range tones", () => {
+    expect(getToneRange("done", thresholds)).toBeUndefined();
+    expect(getToneRange("overdue", thresholds)).toBeUndefined();
+    expect(getToneRange("noDate", thresholds)).toBeUndefined();
+  });
+
+  it("works with default thresholds 7/14/30", () => {
+    const t = { soon: 7, upcoming: 14, later: 30 };
+    expect(getToneRange("soon", t)).toEqual({ from: 0, to: 7 });
+    expect(getToneRange("upcoming", t)).toEqual({ from: 8, to: 14 });
+    expect(getToneRange("later", t)).toEqual({ from: 15, to: 30 });
+    expect(getToneRange("future", t)).toEqual({ from: 31, to: null });
   });
 });
