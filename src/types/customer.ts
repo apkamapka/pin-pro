@@ -67,6 +67,8 @@ export interface TimelineEntry {
   date: string;
   kind: TimelineKind;
   text?: string;
+  /** IDs zdjęć z `customer.photos[]` przypiętych do tego wpisu. */
+  photoIds?: string[];
   /** Kiedy wpis został dodany do systemu (ISO). */
   createdAt: string;
 }
@@ -100,6 +102,9 @@ export interface Customer {
   photos?: MediaAttachment[];
   voiceNotes?: MediaAttachment[];
   timeline?: TimelineEntry[];
+  /** ID zdjęcia z `photos[]` używanego jako miniaturka pinu na mapie.
+   *  Gdy nie ustawione – używamy najnowszego zdjęcia (patrz getThumbnailPhoto). */
+  thumbnailPhotoId?: string;
 
   createdAt: string;
   updatedAt: string;
