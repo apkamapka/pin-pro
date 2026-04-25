@@ -28,6 +28,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { CategoryBadge, DoneBadge } from "@/components/CategoryBadge";
 import { differenceInCalendarDays, format } from "date-fns";
 import { ICON_PALETTE } from "@/lib/iconPalette";
+import { getThumbnailPhoto } from "@/lib/mediaUtils";
 
 interface MapViewProps {
   onSelectCustomer: (c: Customer) => void;
@@ -159,6 +160,22 @@ export function MapView({
                 className="serwis-popup"
               >
                 <div className="min-w-[220px] space-y-2 p-1">
+                  {(() => {
+                    const thumb = getThumbnailPhoto(
+                      c.photos,
+                      c.thumbnailPhotoId,
+                    );
+                    return thumb ? (
+                      <div className="-mx-1 -mt-1 mb-1 overflow-hidden rounded-md">
+                        <img
+                          src={thumb.dataUrl}
+                          alt=""
+                          className="h-28 w-full object-cover"
+                          loading="lazy"
+                        />
+                      </div>
+                    ) : null;
+                  })()}
                   <div className="flex items-start justify-between gap-2">
                     <div className="font-semibold leading-tight text-foreground">
                       {c.name}
