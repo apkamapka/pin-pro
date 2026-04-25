@@ -175,9 +175,22 @@ const dict = {
     photoChoose: "Wybierz z galerii",
     photoProcessing: "Przetwarzam zdjęcie…",
     photoRemoved: "Usunięto zdjęcie",
-    photoRemoveConfirm: "Usunąć to zdjęcie?",
+    photoRemoveConfirm:
+      "Usunąć to zdjęcie? Zniknie też z wszystkich wpisów na osi czasu.",
     photoFailed: "Nie udało się dodać zdjęcia.",
     photoFullscreenClose: "Zamknij",
+    photoPickExisting: "Z galerii klienta",
+    photoPickExistingTitle: "Wybierz zdjęcia z galerii klienta",
+    photoPickExistingEmpty:
+      "Ten klient nie ma jeszcze żadnych zdjęć w galerii.",
+    photoPickConfirm: "Dołącz wybrane",
+    photoAttachedCount: (n: number) =>
+      n === 1 ? "1 zdjęcie przypięte" : `${n} zdjęć przypiętych`,
+    photoSetThumbnail: "Ustaw jako miniaturkę pinu",
+    photoUnsetThumbnail: "Zdejmij z miniaturki",
+    photoIsThumbnail: "Miniaturka",
+    photoThumbnailSet: "Ustawiono miniaturkę pinu",
+    photoThumbnailCleared: "Zdjęto miniaturkę pinu",
 
     // --- Pakiet A: Notatki głosowe ---
     voiceNotes: "Notatki głosowe",
@@ -385,9 +398,21 @@ const dict = {
     photoChoose: "From gallery",
     photoProcessing: "Processing photo…",
     photoRemoved: "Photo removed",
-    photoRemoveConfirm: "Remove this photo?",
+    photoRemoveConfirm:
+      "Remove this photo? It will also disappear from any timeline entries.",
     photoFailed: "Failed to add photo.",
     photoFullscreenClose: "Close",
+    photoPickExisting: "From customer gallery",
+    photoPickExistingTitle: "Pick photos from customer gallery",
+    photoPickExistingEmpty: "This customer has no photos in the gallery yet.",
+    photoPickConfirm: "Attach selected",
+    photoAttachedCount: (n: number) =>
+      n === 1 ? "1 photo attached" : `${n} photos attached`,
+    photoSetThumbnail: "Set as map thumbnail",
+    photoUnsetThumbnail: "Unset thumbnail",
+    photoIsThumbnail: "Thumbnail",
+    photoThumbnailSet: "Map thumbnail set",
+    photoThumbnailCleared: "Map thumbnail cleared",
 
     // --- Package A: Voice notes ---
     voiceNotes: "Voice notes",
