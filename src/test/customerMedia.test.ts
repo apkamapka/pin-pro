@@ -96,6 +96,93 @@ describe("customers store: Pakiet A", () => {
     });
   });
 
+  describe("photo ↔ timeline integration", () => {
+    it("removePhoto cascades and unpins photo from any timeline entries", () => {
+      const c = useCustomers.getState().addCustomer(makeCustomer());
+      const p1 = useCustomers.getState().addPhoto(c.id, {
+        dataUrl: "1",
+        mimeType: "image/jpeg",
+      })!;
+      const p2 = useCustomers.getState().addPhoto(c.id, {
+        dataUrl: "2",
+        mimeType: "image/jpeg",
+      })!;
+      useCustomers.getState().addTimelineEntry(c.id, {
+        date: new Date().toISOString(),
+        kind: "fix",
+        photoIds: [p1.id, p2.id],
+      });
+      // act – usuwamy p1
+      useCustomers.getState().removePhoto(c.id, p1.id);
+
+      const fresh = useCustomers.getState().customers.find((x) => x.id === c.id)!;
+      expect(fresh.photos).toHaveLength(1);
+      expect(fresh.photos![0].id).toBe(p2.id);
+      // wpis zachowany, ale tylko z p2:
+      expect(fresh.timeline![0].photoIds).toEqual([p2.id]);
+    });
+
+    it("removePhoto clears thumbnailPhotoId when removing the thumbnail photo", () => {
+      const c = useCustomers.getState().addCustomer(makeCustomer());
+      const p = useCustomers.getState().addPhoto(c.id, {
+        dataUrl: "1",
+        mimeType: "image/jpeg",
+      })!;
+      useCustomers.getState().setThumbnail(c.id, p.id);
+      const before = useCustomers.getState().customers.find((x) => x.id === c.id)!;
+      expect(before.thumbnailPhotoId).toBe(p.id);
+
+      useCustomers.getState().removePhoto(c.id, p.id);
+      const after = useCustomers.getState().customers.find((x) => x.id === c.id)!;
+      expect(after.thumbnailPhotoId).toBeUndefined();
+    });
+
+    it("removePhoto preserves thumbnailPhotoId when removing a different photo", () => {
+      const c = useCustomers.getState().addCustomer(makeCustomer());
+      const p1 = useCustomers.getState().addPhoto(c.id, {
+        dataUrl: "1",
+        mimeType: "image/jpeg",
+      })!;
+      const p2 = useCustomers.getState().addPhoto(c.id, {
+        dataUrl: "2",
+        mimeType: "image/jpeg",
+      })!;
+      useCustomers.getState().setThumbnail(c.id, p2.id);
+      useCustomers.getState().removePhoto(c.id, p1.id);
+      const fresh = useCustomers.getState().customers.find((x) => x.id === c.id)!;
+      expect(fresh.thumbnailPhotoId).toBe(p2.id);
+    });
+
+    it("setThumbnail with undefined clears the thumbnail", () => {
+      const c = useCustomers.getState().addCustomer(makeCustomer());
+      const p = useCustomers.getState().addPhoto(c.id, {
+        dataUrl: "1",
+        mimeType: "image/jpeg",
+      })!;
+      useCustomers.getState().setThumbnail(c.id, p.id);
+      useCustomers.getState().setThumbnail(c.id, undefined);
+      const fresh = useCustomers.getState().customers.find((x) => x.id === c.id)!;
+      expect(fresh.thumbnailPhotoId).toBeUndefined();
+    });
+
+    it("addTimelineEntry stores photoIds when provided", () => {
+      const c = useCustomers.getState().addCustomer(makeCustomer());
+      const p = useCustomers.getState().addPhoto(c.id, {
+        dataUrl: "1",
+        mimeType: "image/jpeg",
+      })!;
+      const e = useCustomers.getState().addTimelineEntry(c.id, {
+        date: new Date().toISOString(),
+        kind: "issue",
+        text: "leak",
+        photoIds: [p.id],
+      })!;
+      const fresh = useCustomers.getState().customers.find((x) => x.id === c.id)!;
+      expect(fresh.timeline![0].id).toBe(e.id);
+      expect(fresh.timeline![0].photoIds).toEqual([p.id]);
+    });
+  });
+
   describe("timeline", () => {
     it("addTimelineEntry appends entry", () => {
       const c = useCustomers.getState().addCustomer(makeCustomer());
