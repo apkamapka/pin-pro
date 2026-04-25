@@ -186,6 +186,7 @@ export function CustomerDetail({ customer, onEdit, onClose }: Props) {
       <PhotosSection
         customerId={customer.id}
         photos={customer.photos ?? []}
+        thumbnailPhotoId={customer.thumbnailPhotoId}
       />
 
       {/* Pakiet A: Notatki głosowe */}
@@ -198,6 +199,7 @@ export function CustomerDetail({ customer, onEdit, onClose }: Props) {
       <TimelineSection
         customerId={customer.id}
         timeline={customer.timeline ?? []}
+        photos={customer.photos ?? []}
         customerCreatedAt={customer.createdAt}
       />
 
