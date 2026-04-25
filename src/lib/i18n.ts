@@ -58,7 +58,15 @@ const dict = {
     nextAppointment: "Następny kontakt",
     lastVisit: "Ostatni kontakt",
     notes: "Notatki",
-    tags: "Tagi (oddzielone przecinkami)",
+    tags: "Tagi",
+    tagsPlaceholder: "Wpisz i naciśnij Enter…",
+    clearFilter: "Wyczyść filtr",
+    quickAddHere: "Tu jestem (dodaj klienta z GPS)",
+    gpsNotSupported: "Twoja przeglądarka nie obsługuje lokalizacji.",
+    gpsDenied:
+      "Brak zgody na lokalizację. Włącz dostęp w ustawieniach przeglądarki.",
+    gpsTimeout: "Nie udało się ustalić lokalizacji (timeout). Spróbuj ponownie.",
+    gpsFailed: "Nie udało się pobrać lokalizacji.",
 
     // Filtry na mapie / stany
     all: "Wszystkie",
@@ -292,7 +300,14 @@ const dict = {
     nextAppointment: "Next contact",
     lastVisit: "Last contact",
     notes: "Notes",
-    tags: "Tags (comma separated)",
+    tags: "Tags",
+    tagsPlaceholder: "Type and press Enter…",
+    clearFilter: "Clear filter",
+    quickAddHere: "Add customer at my GPS location",
+    gpsNotSupported: "Your browser does not support geolocation.",
+    gpsDenied: "Location access denied. Enable it in browser settings.",
+    gpsTimeout: "Could not get your location (timeout). Try again.",
+    gpsFailed: "Failed to get your location.",
 
     all: "All",
     active: "Active",
