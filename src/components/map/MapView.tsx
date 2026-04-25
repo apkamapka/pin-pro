@@ -16,6 +16,10 @@ import {
   Phone,
   Eye,
   EyeOff,
+  Hash,
+  Crosshair,
+  Loader2,
+  X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useCustomers } from "@/store/customers";
@@ -29,6 +33,8 @@ import { CategoryBadge, DoneBadge } from "@/components/CategoryBadge";
 import { differenceInCalendarDays, format } from "date-fns";
 import { ICON_PALETTE } from "@/lib/iconPalette";
 import { getThumbnailPhoto } from "@/lib/mediaUtils";
+import { collectAllTags } from "@/lib/searchCustomers";
+import { toast } from "sonner";
 
 interface MapViewProps {
   onSelectCustomer: (c: Customer) => void;
@@ -38,10 +44,13 @@ interface MapViewProps {
 }
 
 /**
- * Filtr: "all" (wszystkie) | "none" (bez kategorii) | id kategorii.
- * Plus osobny toggle `showDone`.
+ * Filtr kategorii – multi-select przez `Set<id>`.
+ * Specjalne wartości:
+ *   - "__all"  → pokazuj wszystko (gdy `set` jest pusty, traktujemy jako "wszystko")
+ *   - "__none" → klienci bez kategorii (toggle przez chip "Bez kategorii")
+ * Tags: osobny `Set<tagName>`, AND.
  */
-type Filter = "all" | "none" | string;
+const NO_CATEGORY_KEY = "__none__";
 
 function MapEvents({
   onLongPress,
@@ -89,9 +98,15 @@ export function MapView({
   const customers = useCustomers((s) => s.customers);
   const categories = useCustomers((s) => s.categories);
   const thresholds = useCustomers((s) => s.thresholds);
-  const [filter, setFilter] = useState<Filter>("all");
+  /** Aktywne ID kategorii. Pusty zbiór = pokazuj wszystkie (brak filtra).
+   *  Sentinel `NO_CATEGORY_KEY` reprezentuje "bez kategorii". */
+  const [activeCategories, setActiveCategories] = useState<Set<string>>(
+    new Set(),
+  );
+  const [activeTags, setActiveTags] = useState<Set<string>>(new Set());
   const [showDone, setShowDone] = useState(false);
   const [legendOpen, setLegendOpen] = useState(false);
+  const [gpsLoading, setGpsLoading] = useState(false);
   const isMobile = useIsMobile();
 
   const today = useMemo(() => new Date(), []);
@@ -102,14 +117,96 @@ export function MapView({
     [categories],
   );
 
+  const allTags = useMemo(() => collectAllTags(customers), [customers]);
+
   const filtered = useMemo(() => {
     return customers.filter((c) => {
       if (!showDone && c.isDone) return false;
-      if (filter === "all") return true;
-      if (filter === "none") return !c.categoryId;
-      return c.categoryId === filter;
+
+      // Kategorie – jeśli jakieś wybrane, klient musi pasować do choć jednej.
+      if (activeCategories.size > 0) {
+        const matchesNone =
+          activeCategories.has(NO_CATEGORY_KEY) && !c.categoryId;
+        const matchesCat =
+          !!c.categoryId && activeCategories.has(c.categoryId);
+        if (!matchesNone && !matchesCat) return false;
+      }
+
+      // Tagi – AND (klient musi mieć wszystkie zaznaczone).
+      if (activeTags.size > 0) {
+        const cTags = new Set(
+          (c.tags ?? []).map((t) => t.toLocaleLowerCase()),
+        );
+        for (const required of activeTags) {
+          if (!cTags.has(required.toLocaleLowerCase())) return false;
+        }
+      }
+
+      return true;
     });
-  }, [customers, filter, showDone]);
+  }, [customers, activeCategories, activeTags, showDone]);
+
+  const toggleCategory = (id: string) => {
+    setActiveCategories((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const toggleTag = (tag: string) => {
+    setActiveTags((prev) => {
+      const next = new Set(prev);
+      if (next.has(tag)) next.delete(tag);
+      else next.add(tag);
+      return next;
+    });
+  };
+
+  const clearAllFilters = () => {
+    setActiveCategories(new Set());
+    setActiveTags(new Set());
+  };
+
+  const hasAnyFilter = activeCategories.size > 0 || activeTags.size > 0;
+
+  /**
+   * Szybki dodawania klienta z GPS:
+   * - bierzemy aktualną lokalizację (high accuracy, 10s timeout),
+   * - delegujemy do `onAddAt(lat, lng)` – tam parent sprzęga to z formularzem
+   *   i my dostajemy uzupełniony adres (reverse geocode robi formularz).
+   *
+   * Jeśli GPS odmawia / wygasa, pokazujemy toast i nie blokujemy UI.
+   */
+  const handleQuickAdd = () => {
+    if (!("geolocation" in navigator)) {
+      toast.error(t.gpsNotSupported);
+      return;
+    }
+    setGpsLoading(true);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setGpsLoading(false);
+        onAddAt(pos.coords.latitude, pos.coords.longitude);
+      },
+      (err) => {
+        setGpsLoading(false);
+        if (err.code === err.PERMISSION_DENIED) {
+          toast.error(t.gpsDenied);
+        } else if (err.code === err.TIMEOUT) {
+          toast.error(t.gpsTimeout);
+        } else {
+          toast.error(t.gpsFailed);
+        }
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 30000,
+      },
+    );
+  };
 
   const defaultCenter: [number, number] = useMemo(() => {
     if (customers.length === 0) return [52.0, 19.0];
@@ -251,38 +348,41 @@ export function MapView({
         })}
       </MapContainer>
 
-      {/* Filter chips – user-defined kategorie */}
-      <div className="pointer-events-none absolute inset-x-0 top-0 z-[400] flex justify-center px-3 pt-3">
+      {/* Filter chips – multi-select kategorie + tagi (drugi rząd). */}
+      <div className="pointer-events-none absolute inset-x-0 top-0 z-[400] flex flex-col items-center gap-1.5 px-3 pt-3">
+        {/* Rząd 1: kategorie */}
         <div
           className="chip-row pointer-events-auto flex max-w-full gap-2 overflow-x-auto rounded-full bg-background/95 p-1.5 shadow-floating backdrop-blur"
           role="tablist"
         >
-          {/* "Wszystkie" */}
+          {/* "Wszystkie" – wyczyść kategorie+tagi */}
           <button
-            onClick={() => setFilter("all")}
+            onClick={clearAllFilters}
             className={cn(
               "shrink-0 rounded-full px-3.5 py-1.5 text-xs font-medium transition-colors",
-              filter === "all"
+              !hasAnyFilter
                 ? "bg-primary text-primary-foreground"
                 : "text-foreground hover:bg-accent",
             )}
+            aria-pressed={!hasAnyFilter}
           >
             {t.all}
           </button>
 
-          {/* Dynamiczne kategorie */}
+          {/* Dynamiczne kategorie – multi-select */}
           {categories.map((cat) => {
             const Icon = ICON_PALETTE.find((p) => p.key === cat.icon)?.Icon;
-            const active = filter === cat.id;
+            const active = activeCategories.has(cat.id);
             return (
               <button
                 key={cat.id}
-                onClick={() => setFilter(cat.id)}
+                onClick={() => toggleCategory(cat.id)}
                 className={cn(
                   "flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition-colors",
                   active ? "text-white" : "text-foreground hover:bg-accent",
                 )}
                 style={active ? { backgroundColor: cat.color } : undefined}
+                aria-pressed={active}
               >
                 {Icon && <Icon className="h-3.5 w-3.5" />}
                 <span>{cat.name}</span>
@@ -293,18 +393,58 @@ export function MapView({
           {/* "Bez kategorii" – pokazujemy tylko jeśli są jakiekolwiek kategorie */}
           {categories.length > 0 && (
             <button
-              onClick={() => setFilter("none")}
+              onClick={() => toggleCategory(NO_CATEGORY_KEY)}
               className={cn(
                 "shrink-0 rounded-full px-3.5 py-1.5 text-xs font-medium transition-colors",
-                filter === "none"
+                activeCategories.has(NO_CATEGORY_KEY)
                   ? "bg-primary text-primary-foreground"
                   : "text-muted-foreground hover:bg-accent",
               )}
+              aria-pressed={activeCategories.has(NO_CATEGORY_KEY)}
             >
               {t.categoryNone}
             </button>
           )}
         </div>
+
+        {/* Rząd 2: tagi (tylko jeśli są jakiekolwiek) */}
+        {allTags.length > 0 && (
+          <div
+            className="chip-row pointer-events-auto flex max-w-full items-center gap-1.5 overflow-x-auto rounded-full bg-background/90 p-1.5 shadow-floating backdrop-blur"
+            role="tablist"
+          >
+            {activeTags.size > 0 && (
+              <button
+                type="button"
+                onClick={() => setActiveTags(new Set())}
+                className="shrink-0 rounded-full border border-dashed border-muted-foreground/40 px-2.5 py-1 text-[11px] text-muted-foreground hover:bg-accent"
+                aria-label={t.clearFilter}
+              >
+                <X className="-ml-0.5 mr-0.5 inline h-3 w-3" />
+                {t.clearFilter}
+              </button>
+            )}
+            {allTags.map((tag) => {
+              const active = activeTags.has(tag);
+              return (
+                <button
+                  key={tag}
+                  onClick={() => toggleTag(tag)}
+                  className={cn(
+                    "inline-flex shrink-0 items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] transition-colors",
+                    active
+                      ? "border-primary bg-primary text-primary-foreground"
+                      : "border-border bg-background text-foreground hover:bg-accent",
+                  )}
+                  aria-pressed={active}
+                >
+                  <Hash className="h-3 w-3 opacity-70" />
+                  {tag}
+                </button>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       {/* Toggle Show/Hide Done */}
@@ -351,15 +491,32 @@ export function MapView({
         )}
       </div>
 
-      {/* FAB */}
-      <Button
-        onClick={onAddNew}
-        className="absolute bottom-24 right-4 z-[400] h-14 w-14 rounded-full shadow-floating sm:bottom-6"
-        size="icon"
-        aria-label={t.addCustomer}
-      >
-        <Plus className="h-6 w-6" />
-      </Button>
+      {/* FAB stack: główny "+" oraz "Tu jestem" (GPS quick-add). */}
+      <div className="absolute bottom-24 right-4 z-[400] flex flex-col items-end gap-2 sm:bottom-6">
+        <Button
+          onClick={handleQuickAdd}
+          variant="secondary"
+          className="h-12 w-12 rounded-full shadow-floating"
+          size="icon"
+          aria-label={t.quickAddHere}
+          title={t.quickAddHere}
+          disabled={gpsLoading}
+        >
+          {gpsLoading ? (
+            <Loader2 className="h-5 w-5 animate-spin" />
+          ) : (
+            <Crosshair className="h-5 w-5" />
+          )}
+        </Button>
+        <Button
+          onClick={onAddNew}
+          className="h-14 w-14 rounded-full shadow-floating"
+          size="icon"
+          aria-label={t.addCustomer}
+        >
+          <Plus className="h-6 w-6" />
+        </Button>
+      </div>
     </div>
   );
 }
