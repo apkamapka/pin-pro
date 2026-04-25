@@ -95,3 +95,31 @@ export function getPinColor(
 ): string {
   return TONE_HEX[getPinTone(customer, today, thresholds)];
 }
+
+/**
+ * Zwraca aktualny przedział dni dla danego tonu, jako `{from, to|null}`.
+ * `to === null` oznacza "i wszystko dalej" (future).
+ * Sensowne tylko dla `soon | upcoming | later | future` — dla pozostałych
+ * tonów (`overdue`, `noDate`, `done`) zwraca `undefined`, bo te nie są
+ * przedziałami numerycznymi.
+ *
+ * Używane przez Legend i Settings, żeby etykiety zawsze odpowiadały
+ * aktualnym wartościom suwaków (a nie hardcoded "0-7 / 8-14 / 15-30").
+ */
+export function getToneRange(
+  tone: PinTone,
+  thresholds: ColorThresholds,
+): { from: number; to: number | null } | undefined {
+  switch (tone) {
+    case "soon":
+      return { from: 0, to: thresholds.soon };
+    case "upcoming":
+      return { from: thresholds.soon + 1, to: thresholds.upcoming };
+    case "later":
+      return { from: thresholds.upcoming + 1, to: thresholds.later };
+    case "future":
+      return { from: thresholds.later + 1, to: null };
+    default:
+      return undefined;
+  }
+}
