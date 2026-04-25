@@ -49,6 +49,7 @@ interface CustomersState {
     data: Omit<MediaAttachment, "id" | "createdAt">,
   ) => MediaAttachment | null;
   removePhoto: (customerId: string, photoId: string) => void;
+  setThumbnail: (customerId: string, photoId: string | undefined) => void;
   // Voice notes
   addVoiceNote: (
     customerId: string,
@@ -220,8 +221,33 @@ export const useCustomers = create<CustomersState>()(
               ? {
                   ...c,
                   photos: (c.photos ?? []).filter((p) => p.id !== photoId),
+                  // Odpnij z każdego wpisu osi czasu, w którym był
+                  timeline: (c.timeline ?? []).map((e) =>
+                    e.photoIds && e.photoIds.includes(photoId)
+                      ? {
+                          ...e,
+                          photoIds: e.photoIds.filter((id) => id !== photoId),
+                        }
+                      : e,
+                  ),
+                  // Jeśli to była miniaturka – wyczyść
+                  thumbnailPhotoId:
+                    c.thumbnailPhotoId === photoId
+                      ? undefined
+                      : c.thumbnailPhotoId,
                   updatedAt: now,
                 }
+              : c,
+          ),
+        });
+      },
+
+      setThumbnail: (customerId, photoId) => {
+        const now = new Date().toISOString();
+        set({
+          customers: get().customers.map((c) =>
+            c.id === customerId
+              ? { ...c, thumbnailPhotoId: photoId, updatedAt: now }
               : c,
           ),
         });
