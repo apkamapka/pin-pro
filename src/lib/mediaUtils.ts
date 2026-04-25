@@ -148,3 +148,24 @@ export function isStorageQuotaError(error: unknown): boolean {
     /quota/i.test(message)
   );
 }
+
+/**
+ * Zwraca zdjęcie do wyświetlenia jako miniaturka na mapie.
+ * Priorytet: ręcznie ustawione `thumbnailPhotoId` → najnowsze zdjęcie → brak.
+ *
+ * Logika jest w jednym miejscu (tutaj), żeby popup na mapie, karta klienta
+ * i przyszłe miejsca (np. lista) pokazywały to samo.
+ */
+export function getThumbnailPhoto(
+  photos: { id: string; dataUrl: string; createdAt: string }[] | undefined,
+  thumbnailPhotoId: string | undefined,
+): { id: string; dataUrl: string; createdAt: string } | undefined {
+  if (!photos || photos.length === 0) return undefined;
+  if (thumbnailPhotoId) {
+    const explicit = photos.find((p) => p.id === thumbnailPhotoId);
+    if (explicit) return explicit;
+  }
+  // Default: najnowsze (ostatnio dodane). `photos` rośnie chronologicznie,
+  // więc po prostu ostatni element.
+  return photos[photos.length - 1];
+}
