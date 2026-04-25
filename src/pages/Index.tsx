@@ -29,16 +29,11 @@ const Index = () => {
   const t = useT();
   useThemeEffect();
   const isMobile = useIsMobile();
-  const seedIfEmpty = useCustomers((s) => s.seedIfEmpty);
   const customers = useCustomers((s) => s.customers);
 
   const [tab, setTab] = useState<Tab>("map");
   const [sheet, setSheet] = useState<SheetMode>({ kind: "none" });
   const [focusedId, setFocusedId] = useState<string | null>(null);
-
-  useEffect(() => {
-    seedIfEmpty();
-  }, [seedIfEmpty]);
 
   // Keep detail sheet in sync with latest customer data; close if customer is deleted
   useEffect(() => {
