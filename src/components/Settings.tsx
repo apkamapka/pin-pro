@@ -12,6 +12,8 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import type { Customer } from "@/types/customer";
 import type { Theme } from "@/store/customers";
+import { TONE_HEX } from "@/lib/pinColor";
+import type { PinTone } from "@/lib/pinColor";
 
 const APP_VERSION = "1.0.0";
 
@@ -136,25 +138,37 @@ export function Settings() {
           {t.thresholds}
         </h2>
         <ThresholdSlider
-          label={`${t.legendSoon}`}
+          tone="soon"
+          colorName={t.toneSoonName}
+          rangeLabel={t.dayRange(0, thresholds.soon)}
           value={thresholds.soon}
           min={1}
           max={14}
           onChange={(v) => setThresholds({ ...thresholds, soon: v })}
         />
         <ThresholdSlider
-          label={`${t.legendUpcoming}`}
+          tone="upcoming"
+          colorName={t.toneUpcomingName}
+          rangeLabel={t.dayRange(thresholds.soon + 1, thresholds.upcoming)}
           value={thresholds.upcoming}
           min={thresholds.soon + 1}
           max={28}
           onChange={(v) => setThresholds({ ...thresholds, upcoming: v })}
         />
         <ThresholdSlider
-          label={`${t.legendLater}`}
+          tone="later"
+          colorName={t.toneLaterName}
+          rangeLabel={t.dayRange(thresholds.upcoming + 1, thresholds.later)}
           value={thresholds.later}
           min={thresholds.upcoming + 1}
           max={90}
           onChange={(v) => setThresholds({ ...thresholds, later: v })}
+        />
+        {/* "future" nie ma suwaka — to wszystko powyżej `later`, pokazujemy
+            jako informację bez kontroli. */}
+        <FutureRow
+          colorName={t.toneFutureName}
+          rangeLabel={t.dayPlus(thresholds.later + 1)}
         />
       </section>
 
@@ -290,13 +304,19 @@ export function Settings() {
 }
 
 function ThresholdSlider({
-  label,
+  tone,
+  colorName,
+  rangeLabel,
   value,
   min,
   max,
   onChange,
 }: {
-  label: string;
+  tone: Extract<PinTone, "soon" | "upcoming" | "later">;
+  colorName: string;
+  /** Pre-formatted label like "0–3 dni" — przekazywane z parenta,
+   *  żeby trzymać formatowanie w jednym miejscu (i18n) i nie duplikować. */
+  rangeLabel: string;
   value: number;
   min: number;
   max: number;
@@ -304,8 +324,20 @@ function ThresholdSlider({
 }) {
   return (
     <div className="space-y-2">
-      <div className="flex items-center justify-between text-sm">
-        <span>{label}</span>
+      <div className="flex items-center justify-between gap-3 text-sm">
+        <div className="flex min-w-0 items-center gap-2">
+          <span
+            aria-hidden
+            className="h-3 w-3 shrink-0 rounded-full border border-white/40 shadow-pin"
+            style={{ background: TONE_HEX[tone] }}
+          />
+          <span className="truncate">
+            <span className="font-medium">{colorName}</span>
+            <span className="ml-1.5 text-muted-foreground">
+              · {rangeLabel}
+            </span>
+          </span>
+        </div>
         <span className="tabular-nums font-medium">{value}d</span>
       </div>
       <Slider
@@ -315,6 +347,30 @@ function ThresholdSlider({
         step={1}
         onValueChange={(v) => onChange(v[0])}
       />
+    </div>
+  );
+}
+
+/** Pomocniczy wiersz pokazujący ton "future" — bez suwaka, bo to
+ *  domyślnie "wszystko powyżej later". Daje pełen obraz palety. */
+function FutureRow({
+  colorName,
+  rangeLabel,
+}: {
+  colorName: string;
+  rangeLabel: string;
+}) {
+  return (
+    <div className="flex items-center gap-2 border-t pt-3 text-sm text-muted-foreground">
+      <span
+        aria-hidden
+        className="h-3 w-3 shrink-0 rounded-full border border-white/40 shadow-pin"
+        style={{ background: TONE_HEX.future }}
+      />
+      <span>
+        <span className="font-medium text-foreground">{colorName}</span>
+        <span className="ml-1.5">· {rangeLabel}</span>
+      </span>
     </div>
   );
 }
