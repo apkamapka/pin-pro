@@ -11,7 +11,6 @@ import type {
   TimelineKind,
 } from "@/types/customer";
 import { DEFAULT_THRESHOLDS } from "@/types/customer";
-import { buildSampleCustomers } from "@/lib/sampleData";
 
 export type Theme = "light" | "dark" | "system";
 
@@ -74,7 +73,6 @@ interface CustomersState {
   removeProfession: (p: string) => void;
   setActiveProfession: (p: string | null) => void;
   setTheme: (t: Theme) => void;
-  seedIfEmpty: () => void;
 }
 
 export const useCustomers = create<CustomersState>()(
@@ -388,15 +386,6 @@ export const useCustomers = create<CustomersState>()(
       setActiveProfession: (p) => set({ activeProfession: p }),
 
       setTheme: (theme) => set({ theme }),
-
-      seedIfEmpty: () => {
-        const { customers, seeded } = get();
-        if (!seeded && customers.length === 0) {
-          set({ customers: buildSampleCustomers(), seeded: true });
-        } else if (!seeded) {
-          set({ seeded: true });
-        }
-      },
     }),
     {
       name: "serwismap-data",
