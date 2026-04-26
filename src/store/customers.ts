@@ -21,6 +21,8 @@ interface CustomersState {
   professions: string[];
   activeProfession: string | null;
   theme: Theme;
+  /** Domyślny kraj geokodowania (ISO 3166-1 alpha-2 lowercase, np. "pl", "de", "auto"). */
+  defaultCountry: string;
   seeded: boolean;
 
   // Customers
@@ -73,6 +75,7 @@ interface CustomersState {
   removeProfession: (p: string) => void;
   setActiveProfession: (p: string | null) => void;
   setTheme: (t: Theme) => void;
+  setDefaultCountry: (c: string) => void;
 }
 
 export const useCustomers = create<CustomersState>()(
@@ -84,6 +87,7 @@ export const useCustomers = create<CustomersState>()(
       professions: [],
       activeProfession: null,
       theme: "system",
+      defaultCountry: "pl",
       seeded: false,
 
       addCustomer: (data) => {
@@ -386,6 +390,8 @@ export const useCustomers = create<CustomersState>()(
       setActiveProfession: (p) => set({ activeProfession: p }),
 
       setTheme: (theme) => set({ theme }),
+
+      setDefaultCountry: (defaultCountry) => set({ defaultCountry }),
     }),
     {
       name: "serwismap-data",
