@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import {
+  parseAddress,
   parsePolishAddress,
   simplifyHouseNumber,
   stripStreetPrefix,
@@ -164,5 +165,98 @@ describe("parsePolishAddress - cleaned output for fallback query", () => {
     const raw = "  ul.  słoneczna 10a  33-383 Tylicz  ";
     const r = parsePolishAddress(raw);
     expect(r.raw).toBe(raw);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// parseAddress - foreign addresses (generic parser)
+// ---------------------------------------------------------------------------
+describe("parseAddress - foreign addresses", () => {
+  it("parses German address with country name", () => {
+    const r = parseAddress("Berliner Straße 5, 10115 Berlin, Germany");
+    expect(r.country).toBe("de");
+    expect(r.postalCode).toBe("10115");
+    expect(r.city).toBe("Berlin");
+    expect(r.streetName).toBe("Berliner Straße");
+    expect(r.houseNumber).toBe("5");
+    // Country name "Germany" should be stripped from output
+    expect(r.cleaned).not.toMatch(/Germany/i);
+  });
+
+  it("parses UK address by postcode pattern", () => {
+    const r = parseAddress("10 Downing Street, London SW1A 1AA");
+    expect(r.country).toBe("gb");
+    expect(r.postalCode).toBe("SW1A 1AA");
+    // City might be "London" — depends on parser, just check it's there
+    expect(r.cleaned).toContain("Downing");
+  });
+
+  it("parses Dutch address with NL postcode pattern", () => {
+    const r = parseAddress("Damrak 1, 1011 AB Amsterdam");
+    expect(r.country).toBe("nl");
+    expect(r.postalCode).toBe("1011 AB");
+    expect(r.city).toBe("Amsterdam");
+  });
+
+  it("parses Canadian address by postcode pattern", () => {
+    const r = parseAddress("301 Front St W, Toronto, ON M5V 3A8");
+    expect(r.country).toBe("ca");
+    expect(r.postalCode).toBe("M5V 3A8");
+  });
+
+  it("parses Japanese address by postcode pattern", () => {
+    const r = parseAddress("1-1-1 Chiyoda, 100-0001 Tokyo");
+    expect(r.country).toBe("jp");
+    expect(r.postalCode).toBe("100-0001");
+  });
+
+  it("parses US address (5-digit zip + USA suffix)", () => {
+    const r = parseAddress("1600 Pennsylvania Ave NW, Washington DC 20500, USA");
+    expect(r.country).toBe("us");
+    expect(r.postalCode).toBe("20500");
+  });
+
+  it("uses defaultCountry when nothing detected", () => {
+    // Just street + city, no postal pattern, no country name
+    const r = parseAddress("Some Street 5, Anytown", "de");
+    expect(r.country).toBe("de");
+  });
+
+  it("does NOT use defaultCountry when something IS detected", () => {
+    // Address has Polish postal pattern; defaultCountry "de" should be ignored.
+    const r = parseAddress("ul. Słoneczna 10, 33-383 Tylicz", "de");
+    expect(r.country).toBe("pl");
+  });
+
+  it("PL parser still works through dispatcher", () => {
+    const direct = parsePolishAddress("ul. Słoneczna 10, 33-383 Tylicz");
+    const viaDispatcher = parseAddress("ul. Słoneczna 10, 33-383 Tylicz");
+    // Same result fields (other than `country` which dispatcher always sets to "pl")
+    expect(viaDispatcher.streetName).toBe(direct.streetName);
+    expect(viaDispatcher.houseNumber).toBe(direct.houseNumber);
+    expect(viaDispatcher.postalCode).toBe(direct.postalCode);
+    expect(viaDispatcher.city).toBe(direct.city);
+    expect(viaDispatcher.country).toBe("pl");
+  });
+
+  it("strips trailing country name from output", () => {
+    const r = parseAddress("Berliner Str. 5, 10115 Berlin, Deutschland");
+    // city should not include "Deutschland"
+    expect(r.city).not.toContain("Deutschland");
+    expect(r.city).toContain("Berlin");
+  });
+
+  it("handles French address", () => {
+    const r = parseAddress("10 Rue de la Paix, 75002 Paris, France");
+    expect(r.country).toBe("fr");
+    expect(r.postalCode).toBe("75002");
+    expect(r.city).toBe("Paris");
+  });
+
+  it("handles address without postal or country (relies on default)", () => {
+    const r = parseAddress("Main Street 1, Springfield", "us");
+    expect(r.country).toBe("us");
+    expect(r.city).toBe("Springfield");
+    expect(r.postalCode).toBeUndefined();
   });
 });
