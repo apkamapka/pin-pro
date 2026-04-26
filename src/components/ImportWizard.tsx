@@ -61,6 +61,7 @@ interface Props {
 export function ImportWizard({ open, onOpenChange }: Props) {
   const t = useT();
   const addCustomer = useCustomers((s) => s.addCustomer);
+  const defaultCountry = useCustomers((s) => s.defaultCountry);
 
   // Multi-step state
   const [step, setStep] = useState<Step>("file");
@@ -197,6 +198,7 @@ export function ImportWizard({ open, onOpenChange }: Props) {
     const working = candidates.map((c) => ({ ...c }));
     await batchGeocode(working, {
       shouldCancel: () => cancelRef.current,
+      defaultCountry,
       onProgress: (p) => {
         setProgress(p);
       },
