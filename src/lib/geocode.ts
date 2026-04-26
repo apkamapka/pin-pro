@@ -1,33 +1,31 @@
 /**
- * Geokoder oparty o Nominatim (OpenStreetMap).
+ * Geokoder oparty o Nominatim (OpenStreetMap) — wielokrajowy.
  *
- * Strategia trzech prób żeby maksymalizować hit-rate dla polskich adresów:
+ * Strategia:
  *
- * Próba 1 — STRUCTURED QUERY:
- *   Parsujemy adres na (street, postalcode, city) i wysyłamy jako oddzielne
- *   parametry. Nominatim ma znacznie lepszy hit-rate na structured niż na
- *   free-form, zwłaszcza dla małych miejscowości i adresów typu
- *   "ul. Mikulczycka 12/I/4 42-675" (bez miasta — sam kod pocztowy
- *   wystarczy żeby Nominatim trafił w obszar).
+ *   parseAddress(query) → wykrywa kraj z adresu (po nazwie kraju w tekście
+ *     i po unikalnym wzorcu kodu pocztowego, np. PL "33-383", GB "SW1A 1AA")
  *
- * Próba 2 — FREE-FORM Z FILTREM PL:
- *   Jeśli structured nie znalazł, lecimy z całym adresem jako `q=...`
- *   ale z `countrycodes=pl`. To ratuje przypadki gdzie format adresu jest
- *   nietypowy ale całość-jako-string Nominatim poprawnie zinterpretuje.
+ *   wybór efektywnego kraju (effective country):
+ *     1) jeśli wykryto z adresu → użyj tego (high confidence)
+ *     2) jeśli user ma defaultCountry w Settings → użyj go
+ *     3) jeśli user wybrał "auto" w Settings → bez countrycodes (worldwide)
  *
- * Próba 3 — TYLKO KOD POCZTOWY (+ miasto):
- *   Ostatnia deska ratunku. Pin trafi w środek danego kodu pocztowego.
- *   User może go potem przesunąć ręcznie na mapie.
+ *   Próba 1 — STRUCTURED z effective country.
+ *   Próba 2 — FREE-FORM z effective country.
+ *   Próba 3 — TYLKO POSTAL CODE (gdy mamy kod) z effective country.
+ *   Próba 4 — STRUCTURED bez countrycodes (worldwide). Ratunek dla
+ *     adresów z wybrane kraj a Nominatim ma daną pozycję pod innym krajem.
+ *   Próba 5 — FREE-FORM bez countrycodes (worldwide).
  *
- * Wszystkie zapytania zawsze mają `countrycodes=pl` — to FUNDAMENTALNE.
- * Bez tego Nominatim szuka po świecie i może znaleźć "ul. Słoneczna" w
- * losowej miejscowości w Niemczech zamiast w Tyliczu.
+ *   W praktyce większość adresów znajdzie się przy próbie 1.
  *
- * Rate limit Nominatim to 1 req/sec. Wewnętrzny retry wymaga delaya 1.1s
- * między próbami dla tego samego adresu.
+ * Rate limit Nominatim: 1 req/sec. Wewnętrzny retry wymaga delaya 1.1s
+ * między próbami.
  */
 
-import { parsePolishAddress } from "./addressNormalize";
+import { parseAddress } from "./addressNormalize";
+import { COUNTRY_AUTO } from "./countries";
 
 export interface GeocodeResult {
   lat: number;
@@ -36,7 +34,6 @@ export interface GeocodeResult {
 }
 
 const NOMINATIM_BASE = "https://nominatim.openstreetmap.org";
-/** Pauza między próbami w obrębie tego samego adresu (rate limit Nominatim). */
 const RETRY_DELAY_MS = 1100;
 
 interface NominatimHit {
@@ -45,12 +42,13 @@ interface NominatimHit {
   display_name: string;
 }
 
-/** Parametry wspólne dla wszystkich requestów do Nominatim. */
-function commonParams(): URLSearchParams {
+function commonParams(countryCode?: string): URLSearchParams {
   const p = new URLSearchParams();
   p.set("format", "json");
   p.set("limit", "1");
-  p.set("countrycodes", "pl"); // ← KLUCZOWE: tylko Polska
+  if (countryCode) {
+    p.set("countrycodes", countryCode);
+  }
   p.set("accept-language", "pl");
   return p;
 }
@@ -83,7 +81,6 @@ async function nominatimSearch(
   return { lat, lng, display_name: hit.display_name };
 }
 
-/** Sleep. */
 function sleep(ms: number): Promise<void> {
   return new Promise((r) => setTimeout(r, ms));
 }
@@ -93,11 +90,17 @@ export interface GeocodeOptions {
   fetchImpl?: typeof fetch;
   /** Custom delay (do testów; 0 wyłącza retry-pauzę). */
   retryDelayMs?: number;
+  /**
+   * Domyślny kraj z Ustawień użytkownika (lowercase ISO code, np. "pl").
+   * Specjalna wartość "auto" oznacza "bez filtra kraju".
+   * Używany TYLKO gdy detekcja z adresu nie zadziała.
+   */
+  defaultCountry?: string;
 }
 
 /**
- * Geokoduj adres. Robi do 3 prób (structured → free-form → samo postalcode).
- * Zwraca null gdy nic nie znaleziono.
+ * Geokoduj adres. Robi do 5 prób z eskalacją (najpierw structured z krajem,
+ * potem fallbacki). Zwraca null gdy żadna nie znalazła.
  */
 export async function geocodeAddress(
   query: string,
@@ -108,47 +111,88 @@ export async function geocodeAddress(
 
   const fetchImpl = options.fetchImpl ?? fetch;
   const retryDelay = options.retryDelayMs ?? RETRY_DELAY_MS;
+  const defaultCountry = options.defaultCountry ?? "pl";
 
-  const parsed = parsePolishAddress(trimmed);
+  const parsed = parseAddress(trimmed, defaultCountry);
 
-  // Próba 1: structured query.
-  // Jest sens tylko jeśli mamy minimum jeden konkretny atrybut.
+  // Wybór kraju do filtra:
+  //  - jeśli parser wykrył kraj (z nazwy lub unikalnego postal pattern) → użyj go
+  //  - jeśli user wybrał "auto" → undefined (worldwide)
+  //  - inaczej → defaultCountry
+  let effectiveCountry: string | undefined;
+  if (parsed.country) {
+    effectiveCountry = parsed.country;
+  } else if (defaultCountry === COUNTRY_AUTO) {
+    effectiveCountry = undefined;
+  } else {
+    effectiveCountry = defaultCountry;
+  }
+
+  // Helper liczy ile razy strzeliliśmy do Nominatim — żeby spać tylko między
+  // realnymi requestami (a nie przed pierwszym).
+  let attemptCount = 0;
+  const tryNominatim = async (
+    params: URLSearchParams,
+  ): Promise<GeocodeResult | null> => {
+    if (attemptCount > 0 && retryDelay > 0) {
+      await sleep(retryDelay);
+    }
+    attemptCount++;
+    return nominatimSearch(params, fetchImpl);
+  };
+
   const hasStructuredSignal =
     (parsed.streetName && parsed.city) ||
     parsed.postalCode ||
     (parsed.streetName && parsed.postalCode);
 
+  // Próba 1: structured z effective country
   if (hasStructuredSignal) {
-    const p = commonParams();
+    const p = commonParams(effectiveCountry);
     if (parsed.street) p.set("street", parsed.street);
     if (parsed.city) p.set("city", parsed.city);
     if (parsed.postalCode) p.set("postalcode", parsed.postalCode);
-
-    const r1 = await nominatimSearch(p, fetchImpl);
-    if (r1) return r1;
-
-    if (retryDelay > 0) await sleep(retryDelay);
+    const r = await tryNominatim(p);
+    if (r) return r;
   }
 
-  // Próba 2: free-form z PL filter.
-  // Wysyłamy *wyczyszczony* adres (bez "ul.", z normalnym kodem) — to
-  // dla Nominatim jest łatwiejsze do sparsowania niż surowe wejście.
+  // Próba 2: free-form z effective country
   const freeformQuery = parsed.cleaned || trimmed;
-  const p2 = commonParams();
-  p2.set("q", freeformQuery);
-  const r2 = await nominatimSearch(p2, fetchImpl);
-  if (r2) return r2;
+  {
+    const p = commonParams(effectiveCountry);
+    p.set("q", freeformQuery);
+    const r = await tryNominatim(p);
+    if (r) return r;
+  }
 
-  // Próba 3: jeśli mamy sam kod pocztowy (+ ewentualnie miasto), spróbujmy
-  // wycelować w środek tego obszaru. Pin nie będzie idealny, ale klient
-  // przynajmniej trafi we właściwą okolicę i można go przesunąć ręcznie.
+  // Próba 3: postal code only (jeśli mamy kod)
   if (parsed.postalCode) {
-    if (retryDelay > 0) await sleep(retryDelay);
-    const p3 = commonParams();
-    if (parsed.city) p3.set("city", parsed.city);
-    p3.set("postalcode", parsed.postalCode);
-    const r3 = await nominatimSearch(p3, fetchImpl);
-    if (r3) return r3;
+    const p = commonParams(effectiveCountry);
+    if (parsed.city) p.set("city", parsed.city);
+    p.set("postalcode", parsed.postalCode);
+    const r = await tryNominatim(p);
+    if (r) return r;
+  }
+
+  // Próba 4-5: ostatnia deska ratunku — bez filtra kraju.
+  // Tylko jeśli mieliśmy effectiveCountry (czyli filtrowaliśmy).
+  // Bez sensu robić "tę samą próbę" jeśli już byliśmy bez filtra.
+  if (effectiveCountry) {
+    if (hasStructuredSignal) {
+      const p = commonParams(undefined);
+      if (parsed.street) p.set("street", parsed.street);
+      if (parsed.city) p.set("city", parsed.city);
+      if (parsed.postalCode) p.set("postalcode", parsed.postalCode);
+      const r = await tryNominatim(p);
+      if (r) return r;
+    }
+
+    {
+      const p = commonParams(undefined);
+      p.set("q", freeformQuery);
+      const r = await tryNominatim(p);
+      if (r) return r;
+    }
   }
 
   return null;
