@@ -7,6 +7,7 @@ import { Slider } from "@/components/ui/slider";
 import { CategoryManager } from "@/components/CategoryManager";
 import { ImportWizard } from "@/components/ImportWizard";
 import { useCustomers } from "@/store/customers";
+import { COUNTRIES, COUNTRY_AUTO } from "@/lib/countries";
 import { useT, useI18n } from "@/lib/i18n";
 import { format } from "date-fns";
 import { toast } from "sonner";
@@ -35,6 +36,8 @@ export function Settings() {
   const setActiveProfession = useCustomers((s) => s.setActiveProfession);
   const theme = useCustomers((s) => s.theme);
   const setTheme = useCustomers((s) => s.setTheme);
+  const defaultCountry = useCustomers((s) => s.defaultCountry);
+  const setDefaultCountry = useCustomers((s) => s.setDefaultCountry);
   const fileRef = useRef<HTMLInputElement>(null);
   const [draft, setDraft] = useState("");
   const [wizardOpen, setWizardOpen] = useState(false);
@@ -295,6 +298,24 @@ export function Settings() {
             {t.english}
           </Button>
         </div>
+      </section>
+
+      <section className="space-y-2">
+        <Label htmlFor="default-country">{t.defaultCountry}</Label>
+        <select
+          id="default-country"
+          value={defaultCountry}
+          onChange={(e) => setDefaultCountry(e.target.value)}
+          className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          <option value={COUNTRY_AUTO}>{t.countryAuto}</option>
+          {COUNTRIES.map((c) => (
+            <option key={c.code} value={c.code}>
+              {c.flag} {lang === "pl" ? c.namePl : c.nameEn}
+            </option>
+          ))}
+        </select>
+        <p className="text-xs text-muted-foreground">{t.defaultCountryHint}</p>
       </section>
 
       <section className="space-y-2">
