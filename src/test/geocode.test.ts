@@ -173,8 +173,17 @@ describe("geocodeAddress - postal code only fallback", () => {
     });
 
     expect(result).toBeNull();
-    // Tylko 2 wywołania: structured + free-form. Bez postal code nie ma 3rd.
-    expect(calls).toHaveLength(2);
+    // Próby:
+    //   1) structured z PL filter
+    //   2) free-form z PL filter
+    //   (3 — pomijamy, brak postal code)
+    //   4) structured worldwide (bez countrycodes)
+    //   5) free-form worldwide
+    // = 4 calls (bez 3rd, ale z worldwide fallbackami)
+    expect(calls).toHaveLength(4);
+    // Trzeci call (czyli czwarta próba ogółem — structured worldwide)
+    // nie powinien mieć countrycodes
+    expect(calls[2]).not.toContain("countrycodes");
   });
 });
 
@@ -223,5 +232,101 @@ describe("geocodeAddress - edge cases", () => {
       retryDelayMs: 0,
     });
     expect(r).toBeNull();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Multi-country support
+// ---------------------------------------------------------------------------
+describe("geocodeAddress - multi-country", () => {
+  it("uses detected country (DE) when address contains 'Germany'", async () => {
+    let capturedUrl = "";
+    const fetchMock = makeFetchMock((url) => {
+      capturedUrl = url;
+      return HIT;
+    });
+    await geocodeAddress("Berliner Str. 5, 10115 Berlin, Germany", {
+      fetchImpl: fetchMock,
+      retryDelayMs: 0,
+      defaultCountry: "pl", // user has PL as default but address says Germany
+    });
+    expect(capturedUrl).toContain("countrycodes=de");
+  });
+
+  it("uses defaultCountry when address has no country signal", async () => {
+    let capturedUrl = "";
+    const fetchMock = makeFetchMock((url) => {
+      capturedUrl = url;
+      return HIT;
+    });
+    await geocodeAddress("Some Street 5, Anytown", {
+      fetchImpl: fetchMock,
+      retryDelayMs: 0,
+      defaultCountry: "fr",
+    });
+    expect(capturedUrl).toContain("countrycodes=fr");
+  });
+
+  it("falls back to worldwide search when filtered tries fail", async () => {
+    const calls: string[] = [];
+    const fetchMock = makeFetchMock((url) => {
+      calls.push(url);
+      // First 2 (with country filter) fail.
+      // 3rd / 4th (worldwide) succeed.
+      // Order: structured-PL, freeform-PL, structured-WW, freeform-WW
+      return calls.length < 3 ? [] : HIT;
+    });
+
+    const result = await geocodeAddress("Marszałkowska 1, Warszawa", {
+      fetchImpl: fetchMock,
+      retryDelayMs: 0,
+      defaultCountry: "pl",
+    });
+
+    expect(result).not.toBeNull();
+    // 3rd call is structured worldwide
+    expect(calls[2]).not.toContain("countrycodes");
+  });
+
+  it("'auto' defaultCountry → no countrycodes from start", async () => {
+    let capturedUrl = "";
+    const fetchMock = makeFetchMock((url) => {
+      capturedUrl = url;
+      return HIT;
+    });
+    await geocodeAddress("Some Street 5, Anytown", {
+      fetchImpl: fetchMock,
+      retryDelayMs: 0,
+      defaultCountry: "auto",
+    });
+    expect(capturedUrl).not.toContain("countrycodes");
+  });
+
+  it("UK postcode triggers GB country filter automatically", async () => {
+    let capturedUrl = "";
+    const fetchMock = makeFetchMock((url) => {
+      capturedUrl = url;
+      return HIT;
+    });
+    await geocodeAddress("10 Downing Street, London SW1A 1AA", {
+      fetchImpl: fetchMock,
+      retryDelayMs: 0,
+      defaultCountry: "pl", // user default is PL but UK postcode wins
+    });
+    expect(capturedUrl).toContain("countrycodes=gb");
+  });
+
+  it("Dutch postal pattern triggers NL filter", async () => {
+    let capturedUrl = "";
+    const fetchMock = makeFetchMock((url) => {
+      capturedUrl = url;
+      return HIT;
+    });
+    await geocodeAddress("Damrak 1, 1011 AB Amsterdam", {
+      fetchImpl: fetchMock,
+      retryDelayMs: 0,
+      defaultCountry: "pl",
+    });
+    expect(capturedUrl).toContain("countrycodes=nl");
   });
 });
