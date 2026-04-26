@@ -54,6 +54,7 @@ export function CustomerForm({ initial, editingId, onClose }: Props) {
   const deleteCustomer = useCustomers((s) => s.deleteCustomer);
   const categories = useCustomers((s) => s.categories);
   const allCustomers = useCustomers((s) => s.customers);
+  const defaultCountry = useCustomers((s) => s.defaultCountry);
   const tagSuggestions = collectAllTags(allCustomers);
 
   const nameRef = useRef<HTMLInputElement>(null);
@@ -174,7 +175,7 @@ export function CustomerForm({ initial, editingId, onClose }: Props) {
     setGeocoding(true);
     setFormError(null);
     try {
-      const r = await geocodeAddress(address);
+      const r = await geocodeAddress(address, { defaultCountry });
       if (!r) {
         setFormError(
           "Nie znaleziono tego adresu. Spróbuj wpisać go dokładniej (ulica, numer, miasto) lub zaznacz miejsce długim naciśnięciem na mapie.",
@@ -229,7 +230,7 @@ export function CustomerForm({ initial, editingId, onClose }: Props) {
     if (coordsLat == null || coordsLng == null) {
       setSubmitting(true);
       try {
-        const r = await geocodeAddress(address);
+        const r = await geocodeAddress(address, { defaultCountry });
         if (r) {
           coordsLat = r.lat;
           coordsLng = r.lng;
