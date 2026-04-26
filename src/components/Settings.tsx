@@ -1,10 +1,11 @@
 import { useRef, useState, type KeyboardEvent } from "react";
-import { Check, Download, Moon, Sun, Trash2, Upload, X } from "lucide-react";
+import { Check, Download, FileSpreadsheet, Moon, Sun, Trash2, Upload, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import { CategoryManager } from "@/components/CategoryManager";
+import { ImportWizard } from "@/components/ImportWizard";
 import { useCustomers } from "@/store/customers";
 import { useT, useI18n } from "@/lib/i18n";
 import { format } from "date-fns";
@@ -36,6 +37,7 @@ export function Settings() {
   const setTheme = useCustomers((s) => s.setTheme);
   const fileRef = useRef<HTMLInputElement>(null);
   const [draft, setDraft] = useState("");
+  const [wizardOpen, setWizardOpen] = useState(false);
 
   const handleExport = () => {
     const data = exportCustomers();
@@ -111,14 +113,22 @@ export function Settings() {
         <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
           {t.exportData} / {t.importData}
         </h2>
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
           <Button variant="outline" onClick={handleExport}>
             <Download className="mr-2 h-4 w-4" />
             {t.exportData}
           </Button>
           <Button variant="outline" onClick={handleImportClick}>
             <Upload className="mr-2 h-4 w-4" />
-            {t.importData}
+            {t.importJson}
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => setWizardOpen(true)}
+            className="sm:col-span-2"
+          >
+            <FileSpreadsheet className="mr-2 h-4 w-4" />
+            {t.importSpreadsheet}
           </Button>
           <input
             ref={fileRef}
@@ -132,6 +142,8 @@ export function Settings() {
           {customers.length} {t.customers.toLowerCase()}
         </p>
       </section>
+
+      <ImportWizard open={wizardOpen} onOpenChange={setWizardOpen} />
 
       <section className="space-y-4 rounded-xl border p-4">
         <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
