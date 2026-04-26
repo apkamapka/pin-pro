@@ -14,18 +14,25 @@
  * Output służy do dwóch celów:
  *  - structured query do Nominatim (lepszy hit-rate)
  *  - free-form fallback (gdy structured zawiedzie)
+ *
+ * Dla zagranicznych adresów używamy `parseAddress` które najpierw wykrywa
+ * kraj a potem stosuje albo PL-specific parser, albo generyczny.
  */
+
+import { COUNTRIES, detectCountry } from "./countries";
 
 export interface ParsedAddress {
   /** Surowe wejście (do wyświetlenia w UI). */
   raw: string;
+  /** Wykryty kraj (lowercase ISO 3166-1 alpha-2) lub undefined. */
+  country?: string;
   /** Sama nazwa ulicy bez prefiksu i bez numeru. */
   streetName: string;
   /** Numer domu, ewentualnie z literą. Bez numeru mieszkania. */
   houseNumber: string;
   /** Pełna ulica do query Nominatim: "Słoneczna 10a". */
   street: string;
-  /** Kod pocztowy w formacie XX-XXX (zawsze z myślnikiem) lub undefined. */
+  /** Kod pocztowy w oryginalnym formacie kraju lub undefined. */
   postalCode?: string;
   /** Miasto/wieś. Może być undefined gdy adres miał tylko kod. */
   city?: string;
@@ -167,6 +174,7 @@ export function parsePolishAddress(raw: string): ParsedAddress {
 
   return {
     raw: original,
+    country: "pl",
     streetName,
     houseNumber,
     street: street.trim(),
@@ -174,4 +182,195 @@ export function parsePolishAddress(raw: string): ParsedAddress {
     city,
     cleaned: buildCleaned({ street, postalCode, city }),
   };
+}
+
+// ---------------------------------------------------------------------------
+// Generic foreign-address parser
+// ---------------------------------------------------------------------------
+
+/**
+ * Wszystkie znane wzorce kodów pocztowych (bez ograniczenia do unikalnych).
+ * Używamy do *wyciągnięcia* kodu z adresu – sam fakt match'u nie wskazuje
+ * jednoznacznie kraju (5-cyfrowe kody używa wiele krajów).
+ */
+const ALL_POSTAL_PATTERNS: RegExp[] = [
+  /\b\d{2}-\d{3}\b/, // PL: 33-383
+  /\b[A-Z]{1,2}\d[A-Z\d]?\s?\d[A-Z]{2}\b/i, // GB: SW1A 1AA
+  /\b[A-Z]\d[A-Z]\s?\d[A-Z]\d\b/i, // CA: M5V 3A8
+  /\b\d{3}-\d{4}\b/, // JP: 100-0001
+  /\b\d{4}\s?[A-Z]{2}\b/, // NL: 1011 AB
+  /\b[A-Z]{2}-\d{4,5}\b/i, // LV/LT
+  /\b\d{5}-\d{3}\b/, // BR: 01310-100
+  /\b\d{4}-\d{3}\b/, // PT: 1000-001
+  /\b\d{6}\b/, // RU/CN/IN/UA: 6-digit
+  /\b\d{5}\b/, // DE/FR/IT/ES/US/CZ-without-space (mniej preferowany)
+  /\b\d{3}\s\d{2}\b/, // CZ/SK: 110 00
+  /\b\d{4}\b/, // CH/AT/BE/etc — najszerszy
+];
+
+function extractPostalCode(raw: string): {
+  postalCode: string | undefined;
+  matchedString: string | undefined;
+  beforePart: string;
+  afterPart: string;
+} {
+  for (const re of ALL_POSTAL_PATTERNS) {
+    const m = raw.match(re);
+    if (m && m.index !== undefined) {
+      return {
+        postalCode: m[0].replace(/\s+/g, " ").trim(),
+        matchedString: m[0],
+        beforePart: raw.slice(0, m.index).trim(),
+        afterPart: raw.slice(m.index + m[0].length).trim(),
+      };
+    }
+  }
+  return {
+    postalCode: undefined,
+    matchedString: undefined,
+    beforePart: raw,
+    afterPart: "",
+  };
+}
+
+/**
+ * Generyczny parser adresu zagranicznego.
+ * Bez "ul." stripping (zostawiamy oryginał, Nominatim ogarnie),
+ * bez polskiej kapitalizacji, bez polskich regex'ów postal.
+ *
+ * Strategia:
+ *  1) Wytnij nazwę kraju jeśli widoczna na końcu (np. ", Germany")
+ *  2) Wyciągnij kod pocztowy szerszym wzorcem
+ *  3) Część przed kodem = ulica + numer; część po kodzie = miasto
+ *     (lub: jeśli brak kodu, split po ostatnim przecinku)
+ *  4) Wyciągnij numer domu z końca części-ulicowej
+ */
+function parseGenericAddress(
+  raw: string,
+  detectedCountry: string | undefined,
+): ParsedAddress {
+  const original = raw;
+  let working = raw.replace(/\s+/g, " ").trim();
+
+  // 1) Usuń nazwę kraju z końca (jeśli się dopasowała w detekcji).
+  //    Robimy to żeby nie wpadła do "city".
+  if (detectedCountry) {
+    const c = COUNTRIES.find((x) => x.code === detectedCountry);
+    if (c) {
+      const normalized = working.toLocaleLowerCase("pl-PL");
+      for (const alias of c.aliases) {
+        const re = new RegExp(`[,;]?\\s*${escapeRegex(alias)}\\s*$`, "i");
+        if (re.test(normalized)) {
+          working = working.replace(re, "").trim();
+          // Czyść trailing przecinek
+          working = working.replace(/[,;]\s*$/, "").trim();
+          break;
+        }
+      }
+    }
+  }
+
+  // 2) Wyciągnij postal code
+  const { postalCode, beforePart, afterPart } = extractPostalCode(working);
+
+  // 3) Ulica vs miasto
+  let streetWithNumber = "";
+  let city: string | undefined;
+
+  if (postalCode) {
+    streetWithNumber = beforePart.replace(/[,;]\s*$/, "").trim();
+    city = afterPart ? afterPart.replace(/^[,;:\s-]+/, "").trim() : undefined;
+
+    // Niektóre kraje (DE, FR) mają format "Postal City, Street" — rzadko, ale.
+    // Standardowo zakładamy "Street, Postal City" lub "Street Postal City".
+    // Jeśli "before" jest puste → adres miał format "10115 Berlin, Some Str."
+    if (!streetWithNumber && city) {
+      // Jest tylko city po kodzie. Sprawdźmy czy nie było ulicy w afterPart.
+      // Konkretnie: split city po pierwszym przecinku.
+      const split = city.split(",");
+      if (split.length > 1) {
+        city = split[0].trim();
+        streetWithNumber = split.slice(1).join(",").trim();
+      }
+    }
+  } else {
+    // Brak kodu — podziel po ostatnim przecinku
+    const lastComma = working.lastIndexOf(",");
+    if (lastComma > 0) {
+      city = working.slice(lastComma + 1).trim() || undefined;
+      streetWithNumber = working.slice(0, lastComma).trim();
+    } else {
+      streetWithNumber = working;
+    }
+  }
+
+  // 4) Wyciągnij numer domu z końca (zachowuje się tak samo dla wszystkich krajów)
+  let streetName = streetWithNumber;
+  let houseNumber = "";
+  if (streetWithNumber) {
+    const tailMatch = streetWithNumber.match(HOUSE_NUMBER_TAIL);
+    if (tailMatch) {
+      houseNumber = simplifyHouseNumber(tailMatch[1]);
+      streetName = streetWithNumber.slice(0, tailMatch.index!).trim();
+    } else {
+      // Liczba na początku (US format: "221B Baker Street")
+      const leadMatch = streetWithNumber.match(/^(\d+[A-Za-z]?)\s+(.+)$/);
+      if (leadMatch) {
+        houseNumber = simplifyHouseNumber(leadMatch[1]);
+        streetName = leadMatch[2].trim();
+      }
+    }
+  }
+
+  const street = houseNumber ? `${streetName} ${houseNumber}` : streetName;
+
+  return {
+    raw: original,
+    country: detectedCountry,
+    streetName,
+    houseNumber,
+    street: street.trim(),
+    postalCode,
+    city,
+    cleaned: buildCleaned({ street, postalCode, city }),
+  };
+}
+
+function escapeRegex(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+// ---------------------------------------------------------------------------
+// Top-level dispatcher
+// ---------------------------------------------------------------------------
+
+/**
+ * Główny entry point: wykrywa kraj i wybiera odpowiedni parser.
+ * - PL → polski parser (z usuwaniem "ul." i kapitalizacją)
+ * - reszta → generic parser
+ *
+ * Jeśli nic nie wykryto i podano `defaultCountry`, używa go jako podpowiedzi.
+ * (Wpływa głównie na późniejszy geokoder — sam parsing adresu jest wtedy
+ * zwykle generyczny.)
+ */
+export function parseAddress(
+  raw: string,
+  defaultCountry?: string,
+): ParsedAddress {
+  const detection = detectCountry(raw);
+  // "auto" w defaultCountry oznacza "bez filtra" — nie traktujemy go jako kod
+  // kraju w parserze.
+  const fallback =
+    defaultCountry && defaultCountry !== "auto" ? defaultCountry : undefined;
+  let country = detection.code ?? fallback;
+
+  // PL ma swój specyficzny parser (skrót "ul.", capitalize, etc.)
+  if (country === "pl" || (!country && /\d{2}-\d{3}/.test(raw))) {
+    const result = parsePolishAddress(raw);
+    // Upewnij się że country jest ustawiony
+    return { ...result, country: "pl" };
+  }
+
+  // Wszystko inne → generic
+  return parseGenericAddress(raw, country);
 }
