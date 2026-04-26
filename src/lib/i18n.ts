@@ -177,6 +177,92 @@ const dict = {
     importMode: "Tryb importu",
     importMerge: "Scal",
     importReplace: "Zastąp",
+
+    // --- Import z Excela / CSV (Pakiet B+) ---
+    importJson: "Importuj z JSON",
+    importSpreadsheet: "Importuj z Excela / CSV",
+    importDropTitle: "Przeciągnij plik tutaj",
+    importDropHint: "Excel (.xlsx, .xls) lub CSV — także polskie z średnikiem i Windows-1250",
+    importChooseFile: "Wybierz plik",
+    importFileTooLarge: "Plik jest za duży (limit 10 MB)",
+    importFileEmpty: "Plik jest pusty albo nie ma żadnych wierszy z danymi",
+    importFileFormat: "Nieobsługiwany format pliku. Wspieramy .xlsx, .xls, .csv",
+    importFileFailed: "Nie udało się odczytać pliku",
+    importStepFile: "Plik",
+    importStepMapping: "Mapowanie",
+    importStepGeocode: "Adresy",
+    importStepReview: "Podsumowanie",
+    importPreviewTitle: "Podgląd",
+    importPreviewRows: (n: number) =>
+      n === 1 ? "1 wiersz" : n < 5 ? `${n} wiersze` : `${n} wierszy`,
+    importMappingTitle: "Mapowanie kolumn",
+    importMappingHint:
+      "Apka próbowała sama dopasować kolumny z pliku do pól klienta. Sprawdź i popraw jeśli trzeba.",
+    importMappingFile: "Kolumna z pliku",
+    importMappingField: "Pole klienta",
+    importMappingNone: "— pomiń —",
+    importMappingFieldNames: {
+      name: "Nazwa / Imię i nazwisko",
+      firstName: "Imię",
+      lastName: "Nazwisko",
+      company: "Firma",
+      address: "Adres (pełny)",
+      street: "Ulica",
+      city: "Miasto",
+      postalCode: "Kod pocztowy",
+      phone: "Telefon",
+      phone2: "Telefon dodatkowy",
+      email: "E-mail",
+      website: "Strona WWW",
+      notes: "Notatki",
+      tags: "Tagi (oddzielone , ; |)",
+      lastVisit: "Ostatni kontakt",
+      nextAppointment: "Następny kontakt",
+    },
+    importMappingProblems: "Brakuje wymaganych pól:",
+    importMappingNoName:
+      "Nazwa (przypisz jedno z: Nazwa / Imię i nazwisko / Firma)",
+    importMappingNoAddress:
+      "Adres (przypisz pełny adres albo ulica + miasto + kod)",
+    importUnmappedHint: (n: number) =>
+      n === 0
+        ? "Wszystkie kolumny są zmapowane."
+        : n === 1
+          ? "1 niezmapowana kolumna trafi do notatek klienta."
+          : `${n} niezmapowanych kolumn trafi do notatek klienta.`,
+    importGeocodeTitle: "Wyszukuję adresy na mapie",
+    importGeocodeHint:
+      "Korzystamy z darmowego serwisu OpenStreetMap, który ma limit 1 zapytanie/sek. Cierpliwie — nie dotykaj nic.",
+    importGeocodeProgress: (done: number, total: number) =>
+      `${done} z ${total}`,
+    importGeocodeFound: (n: number) =>
+      n === 1 ? "1 znaleziony" : `${n} znalezionych`,
+    importGeocodeMissing: (n: number) =>
+      n === 1 ? "1 nieznaleziony" : `${n} nieznalezionych`,
+    importGeocodePause: "Przerwij",
+    importGeocodeStart: "Rozpocznij wyszukiwanie",
+    importReviewTitle: "Podsumowanie importu",
+    importReviewReady: (n: number) =>
+      n === 1 ? "1 klient gotowy do dodania" : `${n} klientów gotowych do dodania`,
+    importReviewSkipped: (n: number) =>
+      n === 1
+        ? "1 wiersz pominięty (brak nazwy lub adresu / nieznaleziony adres)"
+        : `${n} wierszy pominiętych (brak nazwy lub adresu / nieznaleziony adres)`,
+    importReviewProblems: "Wiersze z problemami",
+    importReviewNoProblems: "Wszystkie wiersze poprawne ✓",
+    importDoImport: "Dodaj klientów",
+    importImporting: "Dodawanie…",
+    importDone: (n: number) =>
+      n === 1 ? "Zaimportowano 1 klienta" : `Zaimportowano ${n} klientów`,
+    importNothingToImport: "Nie ma żadnych poprawnych wierszy do zaimportowania",
+    importBack: "Wstecz",
+    importNext: "Dalej",
+    importClose: "Zamknij",
+    importStartOver: "Zacznij od nowa",
+    importErrorRowName: "Brak nazwy",
+    importErrorRowAddress: "Brak adresu",
+    importErrorRowGeocode: "Nie znaleziono adresu na mapie",
+
     reverseGeocode: "Pobierz adres z mapy",
     darkMode: "Tryb ciemny",
     light: "Jasny",
@@ -413,6 +499,90 @@ const dict = {
     importMode: "Import mode",
     importMerge: "Merge",
     importReplace: "Replace",
+
+    // --- Import from Excel / CSV (Package B+) ---
+    importJson: "Import from JSON",
+    importSpreadsheet: "Import from Excel / CSV",
+    importDropTitle: "Drop file here",
+    importDropHint: "Excel (.xlsx, .xls) or CSV — Polish semicolons & Windows-1250 supported",
+    importChooseFile: "Choose file",
+    importFileTooLarge: "File is too large (10 MB limit)",
+    importFileEmpty: "File is empty or has no data rows",
+    importFileFormat: "Unsupported file format. Supported: .xlsx, .xls, .csv",
+    importFileFailed: "Failed to read file",
+    importStepFile: "File",
+    importStepMapping: "Mapping",
+    importStepGeocode: "Addresses",
+    importStepReview: "Review",
+    importPreviewTitle: "Preview",
+    importPreviewRows: (n: number) => (n === 1 ? "1 row" : `${n} rows`),
+    importMappingTitle: "Column mapping",
+    importMappingHint:
+      "We tried to auto-match columns from your file to customer fields. Check and adjust if needed.",
+    importMappingFile: "File column",
+    importMappingField: "Customer field",
+    importMappingNone: "— skip —",
+    importMappingFieldNames: {
+      name: "Name / Full name",
+      firstName: "First name",
+      lastName: "Last name",
+      company: "Company",
+      address: "Address (full)",
+      street: "Street",
+      city: "City",
+      postalCode: "Postal code",
+      phone: "Phone",
+      phone2: "Alternate phone",
+      email: "E-mail",
+      website: "Website",
+      notes: "Notes",
+      tags: "Tags (split by , ; |)",
+      lastVisit: "Last contact",
+      nextAppointment: "Next contact",
+    },
+    importMappingProblems: "Missing required fields:",
+    importMappingNoName:
+      "Name (assign one of: Name / Full name / Company)",
+    importMappingNoAddress:
+      "Address (assign full address or street + city + postcode)",
+    importUnmappedHint: (n: number) =>
+      n === 0
+        ? "All columns are mapped."
+        : n === 1
+          ? "1 unmapped column will be appended to customer notes."
+          : `${n} unmapped columns will be appended to customer notes.`,
+    importGeocodeTitle: "Looking up addresses on the map",
+    importGeocodeHint:
+      "We use the free OpenStreetMap service which is limited to 1 request per second. Hang tight — don't touch anything.",
+    importGeocodeProgress: (done: number, total: number) =>
+      `${done} of ${total}`,
+    importGeocodeFound: (n: number) => (n === 1 ? "1 found" : `${n} found`),
+    importGeocodeMissing: (n: number) =>
+      n === 1 ? "1 not found" : `${n} not found`,
+    importGeocodePause: "Stop",
+    importGeocodeStart: "Start lookup",
+    importReviewTitle: "Import summary",
+    importReviewReady: (n: number) =>
+      n === 1 ? "1 customer ready to add" : `${n} customers ready to add`,
+    importReviewSkipped: (n: number) =>
+      n === 1
+        ? "1 row skipped (missing name or address / address not found)"
+        : `${n} rows skipped (missing name or address / address not found)`,
+    importReviewProblems: "Rows with problems",
+    importReviewNoProblems: "All rows OK ✓",
+    importDoImport: "Add customers",
+    importImporting: "Adding…",
+    importDone: (n: number) =>
+      n === 1 ? "Imported 1 customer" : `Imported ${n} customers`,
+    importNothingToImport: "There are no valid rows to import",
+    importBack: "Back",
+    importNext: "Next",
+    importClose: "Close",
+    importStartOver: "Start over",
+    importErrorRowName: "Missing name",
+    importErrorRowAddress: "Missing address",
+    importErrorRowGeocode: "Address not found on map",
+
     reverseGeocode: "Get address from map",
     darkMode: "Dark mode",
     light: "Light",
