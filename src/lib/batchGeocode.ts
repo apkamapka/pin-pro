@@ -43,6 +43,8 @@ export interface BatchGeocodeOptions {
     lng: number;
     display_name: string;
   } | null>;
+  /** Domyślny kraj z Ustawień (ISO 3166-1 alpha-2 lowercase, np. "pl", "auto"). */
+  defaultCountry?: string;
 }
 
 export interface BatchGeocodeResult {
@@ -88,8 +90,15 @@ export async function batchGeocode(
     onProgress,
     shouldCancel,
     delayMs = NOMINATIM_DELAY_MS,
-    geocode = geocodeAddress,
+    geocode,
+    defaultCountry,
   } = options;
+
+  // Default geocode wrapper który przekazuje defaultCountry. Jeśli user
+  // dał własny `geocode` (np. mock w testach) — używamy go bez modyfikacji.
+  const doGeocode =
+    geocode ??
+    ((q: string) => geocodeAddress(q, { defaultCountry }));
 
   // Zliczamy tylko tych, którzy są valid i nie mają jeszcze koordynatów —
   // resztę pomijamy w batchu.
@@ -110,7 +119,7 @@ export async function batchGeocode(
     onProgress?.({ done, total, success, failed, current: c });
 
     try {
-      const result = await geocode(c.address);
+      const result = await doGeocode(c.address);
       if (result) {
         c.lat = result.lat;
         c.lng = result.lng;
