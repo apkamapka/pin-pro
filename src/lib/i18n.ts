@@ -263,6 +263,12 @@ const dict = {
     importErrorRowAddress: "Brak adresu",
     importErrorRowGeocode: "Nie znaleziono adresu na mapie",
 
+    // --- Domyślny kraj geokodowania ---
+    defaultCountry: "Domyślny kraj",
+    defaultCountryHint:
+      "Używany przy wyszukiwaniu adresów na mapie. Apka i tak wykrywa kraj z adresu (np. 'Berlin, Germany'), ale gdy nie ma jak — używa tego.",
+    countryAuto: "🌍 Auto / Mieszane",
+
     reverseGeocode: "Pobierz adres z mapy",
     darkMode: "Tryb ciemny",
     light: "Jasny",
@@ -582,6 +588,12 @@ const dict = {
     importErrorRowName: "Missing name",
     importErrorRowAddress: "Missing address",
     importErrorRowGeocode: "Address not found on map",
+
+    // --- Default geocoding country ---
+    defaultCountry: "Default country",
+    defaultCountryHint:
+      "Used when searching addresses on the map. The app auto-detects country from the address (e.g. 'Berlin, Germany'); this is used as fallback.",
+    countryAuto: "🌍 Auto / Mixed",
 
     reverseGeocode: "Get address from map",
     darkMode: "Dark mode",
