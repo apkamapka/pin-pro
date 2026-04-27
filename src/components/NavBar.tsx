@@ -39,14 +39,14 @@ export function NavBar({ active, onChange, variant }: Props) {
             aria-selected={active === it.key}
             onClick={() => onChange(it.key)}
             className={cn(
-              "flex min-h-[60px] flex-col items-center justify-center gap-0.5 py-2 text-[11px] font-medium transition-colors",
+              "flex min-h-[60px] flex-col items-center justify-center gap-0.5 px-1 py-2 text-[10px] font-medium transition-colors",
               active === it.key
                 ? "text-primary"
                 : "text-muted-foreground hover:text-foreground",
             )}
           >
             {it.icon}
-            <span>{it.label}</span>
+            <span className="max-w-full truncate">{it.label}</span>
           </button>
         ))}
       </nav>
