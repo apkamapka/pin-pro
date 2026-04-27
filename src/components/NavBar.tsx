@@ -1,8 +1,14 @@
-import { CalendarClock, Map, Settings as SettingsIcon, Users } from "lucide-react";
+import {
+  CalendarClock,
+  Compass,
+  Map,
+  Settings as SettingsIcon,
+  Users,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useT } from "@/lib/i18n";
 
-export type Tab = "map" | "customers" | "today" | "settings";
+export type Tab = "map" | "customers" | "today" | "nearby" | "settings";
 
 interface Props {
   active: Tab;
@@ -16,13 +22,14 @@ export function NavBar({ active, onChange, variant }: Props) {
     { key: "map", label: t.map, icon: <Map className="h-5 w-5" /> },
     { key: "customers", label: t.customers, icon: <Users className="h-5 w-5" /> },
     { key: "today", label: t.today, icon: <CalendarClock className="h-5 w-5" /> },
+    { key: "nearby", label: t.nearby, icon: <Compass className="h-5 w-5" /> },
     { key: "settings", label: t.settings, icon: <SettingsIcon className="h-5 w-5" /> },
   ];
 
   if (variant === "bottom") {
     return (
       <nav
-        className="fixed inset-x-0 bottom-0 z-[500] grid grid-cols-4 border-t bg-background/95 backdrop-blur pb-[env(safe-area-inset-bottom)] shadow-floating"
+        className="fixed inset-x-0 bottom-0 z-[500] grid grid-cols-5 border-t bg-background/95 backdrop-blur pb-[env(safe-area-inset-bottom)] shadow-floating"
         role="tablist"
       >
         {items.map((it) => (
