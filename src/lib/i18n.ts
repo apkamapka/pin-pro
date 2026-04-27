@@ -339,6 +339,37 @@ const dict = {
     storageFull:
       "Brak miejsca w pamięci przeglądarki. Usuń kilka zdjęć lub nagrań i spróbuj ponownie.",
     size: "Rozmiar",
+
+    // --- "W okolicy" (geo-feature) ---
+    nearby: "Okolica",
+    nearbyHeader: (km: number) =>
+      `Klienci w promieniu ${km} km od Ciebie`,
+    nearbyFound: (n: number) =>
+      n === 0
+        ? "Brak klientów w pobliżu"
+        : n === 1
+          ? "1 klient"
+          : n < 5
+            ? `${n} klientów`
+            : `${n} klientów`,
+    nearbyOverdueCount: (n: number) =>
+      n === 1 ? "1 przeterminowany" : `${n} przeterminowanych`,
+    nearbyEmptyTitle: "Pusto w okolicy",
+    nearbyEmptyHint: (km: number) =>
+      `Nikogo z Twojej bazy w promieniu ${km} km. Zwiększ promień w Ustawieniach albo dodaj nowych klientów.`,
+    nearbyLocating: "Szukam Twojej lokalizacji…",
+    nearbyLocatingHint:
+      "Twoja lokalizacja jest używana tylko teraz, do filtrowania listy. Nic nie wysyłamy na zewnątrz.",
+    nearbyNoLocation: "Brak lokalizacji",
+    nearbyRetry: "Spróbuj ponownie",
+    nearbyRefresh: "Odśwież lokalizację",
+    nearbyRadius: "Promień „W okolicy”",
+    nearbyRadiusHint:
+      "Określa, jak daleko apka szuka klientów wokół Ciebie w zakładce „Okolica”.",
+    nearbyBannerTitle: (distance: string) =>
+      `Masz przeterminowanego klienta ${distance} stąd`,
+    nearbyAndMore: (n: number) =>
+      n === 1 ? "i 1 więcej" : `i ${n} więcej`,
   },
   en: {
     appName: "SerwisMap",
@@ -663,6 +694,35 @@ const dict = {
     storageFull:
       "Browser storage is full. Remove some photos or recordings and try again.",
     size: "Size",
+
+    // --- "Nearby" (geo-feature) ---
+    nearby: "Nearby",
+    nearbyHeader: (km: number) =>
+      `Customers within ${km} km of you`,
+    nearbyFound: (n: number) =>
+      n === 0
+        ? "No customers nearby"
+        : n === 1
+          ? "1 customer"
+          : `${n} customers`,
+    nearbyOverdueCount: (n: number) =>
+      n === 1 ? "1 overdue" : `${n} overdue`,
+    nearbyEmptyTitle: "Nothing nearby",
+    nearbyEmptyHint: (km: number) =>
+      `No customers from your list within ${km} km. Increase the radius in Settings or add new customers.`,
+    nearbyLocating: "Locating you…",
+    nearbyLocatingHint:
+      "Your location is used only now, to filter the list. Nothing is sent anywhere.",
+    nearbyNoLocation: "Location unavailable",
+    nearbyRetry: "Try again",
+    nearbyRefresh: "Refresh location",
+    nearbyRadius: "Nearby radius",
+    nearbyRadiusHint:
+      "Sets how far the app looks for customers around you in the Nearby tab.",
+    nearbyBannerTitle: (distance: string) =>
+      `Overdue customer ${distance} from you`,
+    nearbyAndMore: (n: number) =>
+      n === 1 ? "and 1 more" : `and ${n} more`,
   },
 } as const;
 
