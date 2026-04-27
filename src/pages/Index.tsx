@@ -10,6 +10,8 @@ import { NavBar, type Tab } from "@/components/NavBar";
 import { MapView } from "@/components/map/MapView";
 import { CustomersList } from "@/components/CustomersList";
 import { TodayView } from "@/components/TodayView";
+import { NearbyView } from "@/components/NearbyView";
+import { NearbyBanner } from "@/components/NearbyBanner";
 import { Settings } from "@/components/Settings";
 import { CustomerForm } from "@/components/CustomerForm";
 import { CustomerDetail } from "@/components/CustomerDetail";
@@ -123,17 +125,21 @@ const Index = () => {
         className={`flex-1 overflow-hidden ${tab === "map" ? "" : "overflow-y-auto"} ${isMobile ? "pb-[64px]" : ""}`}
       >
         {tab === "map" && (
-          <MapView
-            onSelectCustomer={openDetail}
-            onAddAt={openAddAt}
-            onAddNew={openAdd}
-            selectedId={focusedId}
-          />
+          <div className="relative h-full w-full">
+            <MapView
+              onSelectCustomer={openDetail}
+              onAddAt={openAddAt}
+              onAddNew={openAdd}
+              selectedId={focusedId}
+            />
+            <NearbyBanner onOpen={() => setTab("nearby")} />
+          </div>
         )}
         {tab === "customers" && (
           <CustomersList onSelectCustomer={openDetail} onAddNew={openAdd} />
         )}
         {tab === "today" && <TodayView onSelectCustomer={openDetail} />}
+        {tab === "nearby" && <NearbyView onSelectCustomer={openDetail} />}
         {tab === "settings" && <Settings />}
       </main>
 
