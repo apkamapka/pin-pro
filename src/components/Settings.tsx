@@ -38,6 +38,8 @@ export function Settings() {
   const setTheme = useCustomers((s) => s.setTheme);
   const defaultCountry = useCustomers((s) => s.defaultCountry);
   const setDefaultCountry = useCustomers((s) => s.setDefaultCountry);
+  const nearbyRadiusKm = useCustomers((s) => s.nearbyRadiusKm);
+  const setNearbyRadiusKm = useCustomers((s) => s.setNearbyRadiusKm);
   const fileRef = useRef<HTMLInputElement>(null);
   const [draft, setDraft] = useState("");
   const [wizardOpen, setWizardOpen] = useState(false);
@@ -316,6 +318,25 @@ export function Settings() {
           ))}
         </select>
         <p className="text-xs text-muted-foreground">{t.defaultCountryHint}</p>
+      </section>
+
+      <section className="space-y-3 rounded-xl border p-4">
+        <div className="flex items-baseline justify-between gap-3">
+          <Label className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+            {t.nearbyRadius}
+          </Label>
+          <span className="tabular-nums text-sm font-medium">
+            {nearbyRadiusKm} km
+          </span>
+        </div>
+        <Slider
+          value={[nearbyRadiusKm]}
+          min={1}
+          max={50}
+          step={1}
+          onValueChange={(v) => setNearbyRadiusKm(v[0])}
+        />
+        <p className="text-xs text-muted-foreground">{t.nearbyRadiusHint}</p>
       </section>
 
       <section className="space-y-2">
