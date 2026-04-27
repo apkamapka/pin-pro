@@ -23,6 +23,8 @@ interface CustomersState {
   theme: Theme;
   /** Domyślny kraj geokodowania (ISO 3166-1 alpha-2 lowercase, np. "pl", "de", "auto"). */
   defaultCountry: string;
+  /** Promień szukania "W okolicy" w km (slider 1–50, default 5). */
+  nearbyRadiusKm: number;
   seeded: boolean;
 
   // Customers
@@ -76,6 +78,7 @@ interface CustomersState {
   setActiveProfession: (p: string | null) => void;
   setTheme: (t: Theme) => void;
   setDefaultCountry: (c: string) => void;
+  setNearbyRadiusKm: (km: number) => void;
 }
 
 export const useCustomers = create<CustomersState>()(
@@ -88,6 +91,7 @@ export const useCustomers = create<CustomersState>()(
       activeProfession: null,
       theme: "system",
       defaultCountry: "pl",
+      nearbyRadiusKm: 5,
       seeded: false,
 
       addCustomer: (data) => {
@@ -392,10 +396,19 @@ export const useCustomers = create<CustomersState>()(
       setTheme: (theme) => set({ theme }),
 
       setDefaultCountry: (defaultCountry) => set({ defaultCountry }),
+
+      setNearbyRadiusKm: (km) => {
+        // Clamp do zakresu suwaka — żeby nikt nie zepsuł stanu z poziomu konsoli
+        // ani migracja ze starszej wersji nie wstrzyknęła np. 0 albo NaN-a.
+        const safe = Number.isFinite(km)
+          ? Math.max(1, Math.min(50, Math.round(km)))
+          : 5;
+        set({ nearbyRadiusKm: safe });
+      },
     }),
     {
       name: "serwismap-data",
-      version: 4,
+      version: 5,
       migrate: (persisted: unknown, fromVersion: number) => {
         const state = (persisted ?? {}) as Record<string, unknown>;
 
@@ -461,6 +474,16 @@ export const useCustomers = create<CustomersState>()(
             voiceNotes: Array.isArray(c.voiceNotes) ? c.voiceNotes : undefined,
             timeline: Array.isArray(c.timeline) ? c.timeline : undefined,
           }));
+        }
+
+        // --- v4 -> v5: dodajemy nearbyRadiusKm (default 5 km). ---
+        if (fromVersion < 5) {
+          if (
+            typeof state.nearbyRadiusKm !== "number" ||
+            !Number.isFinite(state.nearbyRadiusKm)
+          ) {
+            state.nearbyRadiusKm = 5;
+          }
         }
 
         return state as CustomersState;
