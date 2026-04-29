@@ -41,16 +41,25 @@ function iconForType(type: CustomFieldType) {
 
 /** Mapuje typ pola na input type, żeby telefon wywołał na mobile keyboard z cyframi
  *  a email keyboard z `@`. */
+/** Mapuje typ pola na input type, żeby telefon wywołał na mobile keyboard z cyframi
+ *  a email keyboard z `@`.
+ *
+ *  UWAGA: dla URL świadomie używamy `text` zamiast `url`. HTML5 `type="url"`
+ *  wymusza protokół (http:// / https://), co rozwala UX — user wpisuje
+ *  „www.test.pl" i dostaje native validation error. CustomerDetail i tak
+ *  dorzuca `https://` przy generowaniu klikalnego linka, więc protokół jest
+ *  niepotrzebny w wartości. */
 function inputTypeForType(type: CustomFieldType): string {
   if (type === "phone") return "tel";
   if (type === "email") return "email";
-  if (type === "url") return "url";
   return "text";
 }
 
 /** inputMode dla mobilnych klawiatur, gdy `type` nie wystarczy. */
 function inputModeForType(type: CustomFieldType): string | undefined {
   if (type === "tax_id") return "numeric";
+  // URL: mobile keyboard z `/`, `.`, `.com` ale BEZ native validation.
+  if (type === "url") return "url";
   return undefined;
 }
 
@@ -156,6 +165,11 @@ export function CustomFieldRow({
         onChange={(e) => onChange({ value: e.target.value })}
         placeholder={t.customFieldValuePlaceholder}
         autoComplete="off"
+        // Dla URL/email/tax_id nie chcemy, żeby telefon kapitalizował
+        // pierwszą literę („Www.test.pl") ani autokorektował literówek.
+        autoCapitalize={field.type === "text" ? undefined : "none"}
+        autoCorrect={field.type === "text" ? undefined : "off"}
+        spellCheck={field.type === "text"}
         className="h-9"
       />
     </div>
