@@ -37,8 +37,18 @@ export function buildHaystack(
   c: Customer,
   categoryName: string | undefined,
 ): string {
+  // Pola custom: przeszukujemy zarówno etykiety, jak i wartości — ktoś może
+  // szukać „NIP" jako słowa kluczowego, ktoś inny po fragmencie numeru.
+  const customParts: string[] = [];
+  for (const f of c.customFields ?? []) {
+    if (f.label) customParts.push(f.label);
+    if (f.value) customParts.push(f.value);
+  }
   const parts: string[] = [
     c.name,
+    // Legacy pola — zachowujemy w haystacku na wypadek bardzo starych eksportów,
+    // które jeszcze nie przeszły migracji v6. Dla nowych klientów te pola są
+    // puste, więc nie dublują się z customFields.
     c.company ?? "",
     c.profession ?? "",
     c.address,
@@ -48,6 +58,7 @@ export function buildHaystack(
     c.website ?? "",
     c.notes ?? "",
     categoryName ?? "",
+    ...customParts,
     ...(c.tags ?? []),
     ...((c.timeline ?? []).map((e) => e.text ?? "")),
   ];
