@@ -1,9 +1,10 @@
 import { differenceInCalendarDays, format } from "date-fns";
 import {
-  Briefcase,
   CheckCircle2,
   Edit2,
+  FileText,
   Globe,
+  Hash,
   Mail,
   MapPin,
   Phone,
@@ -13,11 +14,12 @@ import {
 import { Button } from "@/components/ui/button";
 import { useT } from "@/lib/i18n";
 import { useCustomers } from "@/store/customers";
-import type { Customer } from "@/types/customer";
+import type { Customer, CustomField } from "@/types/customer";
 import { CategoryBadge, DoneBadge } from "@/components/CategoryBadge";
 import { PhotosSection } from "@/components/PhotosSection";
 import { VoiceNotesSection } from "@/components/VoiceNotesSection";
 import { TimelineSection } from "@/components/TimelineSection";
+import { getAllCustomFields } from "@/lib/customFields";
 import { toast } from "sonner";
 
 interface Props {
@@ -60,20 +62,6 @@ export function CustomerDetail({ customer, onEdit, onClose }: Props) {
         <h2 className="text-2xl font-semibold leading-tight">
           {customer.name}
         </h2>
-        {(customer.company || customer.profession) && (
-          <div className="text-sm text-muted-foreground">
-            {customer.company && (
-              <span className="inline-flex items-center gap-1.5">
-                <Briefcase className="h-3.5 w-3.5" />
-                {customer.company}
-              </span>
-            )}
-            {customer.company && customer.profession && (
-              <span className="mx-1.5">·</span>
-            )}
-            {customer.profession && <span>{customer.profession}</span>}
-          </div>
-        )}
         <div className="flex flex-wrap items-center gap-1.5">
           <CategoryBadge categoryId={customer.categoryId} />
           {customer.isDone && <DoneBadge />}
@@ -118,49 +106,9 @@ export function CustomerDetail({ customer, onEdit, onClose }: Props) {
           </div>
         </div>
 
-        {customer.phone && (
-          <a
-            href={`tel:${customer.phone}`}
-            className="flex items-center gap-3 rounded-lg p-2 -mx-2 hover:bg-accent/40 transition-colors"
-          >
-            <Phone className="h-4 w-4 text-muted-foreground" />
-            <span className="text-sm">{customer.phone}</span>
-          </a>
-        )}
-
-        {customer.phone2 && (
-          <a
-            href={`tel:${customer.phone2}`}
-            className="flex items-center gap-3 rounded-lg p-2 -mx-2 hover:bg-accent/40 transition-colors"
-          >
-            <Phone className="h-4 w-4 text-muted-foreground" />
-            <span className="text-sm">{customer.phone2}</span>
-          </a>
-        )}
-
-        {customer.email && (
-          <a
-            href={`mailto:${customer.email}`}
-            className="flex items-center gap-3 rounded-lg p-2 -mx-2 hover:bg-accent/40 transition-colors"
-          >
-            <Mail className="h-4 w-4 text-muted-foreground" />
-            <span className="text-sm">{customer.email}</span>
-          </a>
-        )}
-
-        {customer.website && (
-          <a
-            href={customer.website}
-            target="_blank"
-            rel="noreferrer"
-            className="flex items-center gap-3 rounded-lg p-2 -mx-2 hover:bg-accent/40 transition-colors"
-          >
-            <Globe className="h-4 w-4 text-muted-foreground" />
-            <span className="text-sm text-primary break-all">
-              {customer.website}
-            </span>
-          </a>
-        )}
+        {getAllCustomFields(customer).map((field) => (
+          <CustomFieldDisplay key={field.id} field={field} />
+        ))}
       </div>
 
       {customer.notes && (
@@ -240,6 +188,68 @@ export function CustomerDetail({ customer, onEdit, onClose }: Props) {
           </Button>
         </div>
       </div>
+    </div>
+  );
+}
+
+/** Pojedynczy wiersz pola custom: ikona + label + wartość.
+ *  Pola typu phone/email/url są klikalne (tel:, mailto:, target=_blank). */
+function CustomFieldDisplay({ field }: { field: CustomField }) {
+  const { type, value, label } = field;
+  if (!value.trim()) return null;
+
+  const Icon =
+    type === "phone"
+      ? Phone
+      : type === "email"
+        ? Mail
+        : type === "url"
+          ? Globe
+          : type === "tax_id"
+            ? Hash
+            : FileText;
+
+  // URL: dodaj protokół jeśli go nie ma
+  const href =
+    type === "phone"
+      ? `tel:${value}`
+      : type === "email"
+        ? `mailto:${value}`
+        : type === "url"
+          ? value.startsWith("http") ? value : `https://${value}`
+          : null;
+
+  const inner = (
+    <>
+      <Icon className="h-4 w-4 text-muted-foreground shrink-0" />
+      <div className="min-w-0 flex-1">
+        {label.trim() && (
+          <div className="text-xs text-muted-foreground">{label}</div>
+        )}
+        <div
+          className={`text-sm break-words ${type === "url" ? "text-primary" : ""}`}
+        >
+          {value}
+        </div>
+      </div>
+    </>
+  );
+
+  if (href) {
+    return (
+      <a
+        href={href}
+        target={type === "url" ? "_blank" : undefined}
+        rel={type === "url" ? "noreferrer" : undefined}
+        className="flex items-start gap-3 rounded-lg p-2 -mx-2 hover:bg-accent/40 transition-colors"
+      >
+        {inner}
+      </a>
+    );
+  }
+  return (
+    <div className="flex items-start gap-3 p-2 -mx-2">
+      {inner}
     </div>
   );
 }
