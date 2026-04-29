@@ -11,6 +11,7 @@ import type {
   TimelineKind,
 } from "@/types/customer";
 import { DEFAULT_THRESHOLDS } from "@/types/customer";
+import { legacyToCustomFields } from "@/lib/customFields";
 
 export type Theme = "light" | "dark" | "system";
 
@@ -18,8 +19,6 @@ interface CustomersState {
   customers: Customer[];
   categories: Category[];
   thresholds: ColorThresholds;
-  professions: string[];
-  activeProfession: string | null;
   theme: Theme;
   /** Domyślny kraj geokodowania (ISO 3166-1 alpha-2 lowercase, np. "pl", "de", "auto"). */
   defaultCountry: string;
@@ -73,9 +72,6 @@ interface CustomersState {
 
   // Other settings
   setThresholds: (t: ColorThresholds) => void;
-  addProfession: (p: string) => "added" | "exists" | "invalid";
-  removeProfession: (p: string) => void;
-  setActiveProfession: (p: string | null) => void;
   setTheme: (t: Theme) => void;
   setDefaultCountry: (c: string) => void;
   setNearbyRadiusKm: (km: number) => void;
@@ -87,8 +83,6 @@ export const useCustomers = create<CustomersState>()(
       customers: [],
       categories: [],
       thresholds: DEFAULT_THRESHOLDS,
-      professions: [],
-      activeProfession: null,
       theme: "system",
       defaultCountry: "pl",
       nearbyRadiusKm: 5,
@@ -361,38 +355,6 @@ export const useCustomers = create<CustomersState>()(
 
       setThresholds: (thresholds) => set({ thresholds }),
 
-      addProfession: (raw) => {
-        const p = raw.trim();
-        if (!p) return "invalid";
-        const list = get().professions;
-        const exists = list.some(
-          (x) => x.toLocaleLowerCase() === p.toLocaleLowerCase(),
-        );
-        if (exists) {
-          const canonical = list.find(
-            (x) => x.toLocaleLowerCase() === p.toLocaleLowerCase(),
-          )!;
-          set({ activeProfession: canonical });
-          return "exists";
-        }
-        set({
-          professions: [...list, p],
-          activeProfession: p,
-        });
-        return "added";
-      },
-
-      removeProfession: (p) => {
-        const list = get().professions.filter((x) => x !== p);
-        const active = get().activeProfession;
-        set({
-          professions: list,
-          activeProfession: active === p ? (list[0] ?? null) : active,
-        });
-      },
-
-      setActiveProfession: (p) => set({ activeProfession: p }),
-
       setTheme: (theme) => set({ theme }),
 
       setDefaultCountry: (defaultCountry) => set({ defaultCountry }),
@@ -408,7 +370,7 @@ export const useCustomers = create<CustomersState>()(
     }),
     {
       name: "serwismap-data",
-      version: 5,
+      version: 6,
       migrate: (persisted: unknown, fromVersion: number) => {
         const state = (persisted ?? {}) as Record<string, unknown>;
 
@@ -484,6 +446,42 @@ export const useCustomers = create<CustomersState>()(
           ) {
             state.nearbyRadiusKm = 5;
           }
+        }
+
+        // --- v5 -> v6: legacy pola → customFields, wywalamy professions ze stanu ---
+        // Wszystkie pola kontaktowe (phone, phone2, email, website, company,
+        // profession) to teraz user-defined. Zachowujemy je jednak w obiekcie
+        // klienta (typ ma je jako @deprecated optional) — żeby:
+        //   1) eksport JSON był wstecznie kompatybilny z czytnikiem v5
+        //   2) gdyby coś poszło nie tak z migracją, dane nie są stracone
+        // CustomerForm i pozostałe UI czytają tylko `customFields` od teraz.
+        if (fromVersion < 6) {
+          const arr = Array.isArray(state.customers)
+            ? (state.customers as Array<Record<string, unknown>>)
+            : [];
+          state.customers = arr.map((c) => {
+            // Jeśli ktoś ręcznie eksperymentował i ma już customFields – zostaw
+            const existing = Array.isArray(c.customFields)
+              ? (c.customFields as Customer["customFields"])
+              : undefined;
+            const fromLegacy = legacyToCustomFields({
+              company: typeof c.company === "string" ? c.company : undefined,
+              profession:
+                typeof c.profession === "string" ? c.profession : undefined,
+              phone: typeof c.phone === "string" ? c.phone : undefined,
+              phone2: typeof c.phone2 === "string" ? c.phone2 : undefined,
+              email: typeof c.email === "string" ? c.email : undefined,
+              website: typeof c.website === "string" ? c.website : undefined,
+            });
+            return {
+              ...c,
+              customFields:
+                existing && existing.length > 0 ? existing : fromLegacy,
+            };
+          });
+          // Sprzątanie: globalne settings profesji nie są już używane
+          delete state.professions;
+          delete state.activeProfession;
         }
 
         return state as CustomersState;
