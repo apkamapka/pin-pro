@@ -7,6 +7,8 @@
  */
 
 import type { ColumnMapping, SchemaField } from "./columnMapping";
+import type { CustomField } from "@/types/customer";
+import { makeCustomField } from "@/lib/customFields";
 
 export interface ImportCandidate {
   /** Stabilny identyfikator wiersza w obrębie sesji importu (do progress / retry). */
@@ -18,12 +20,9 @@ export interface ImportCandidate {
 
   // Pola gotowe pod model Customer:
   name: string;
-  company?: string;
   address: string;
-  phone?: string;
-  phone2?: string;
-  email?: string;
-  website?: string;
+  /** Pola custom (telefon, email, www, NIP, firma — wszystko user-defined od v6). */
+  customFields?: CustomField[];
   notes?: string;
   tags?: string[];
   lastVisit?: string;
@@ -188,9 +187,6 @@ export function composeCandidates(
       const v = (row[header] ?? "").trim();
       if (v) extras.push(`${header}: ${v}`);
     }
-    // Jeśli mamy company a nie jest tożsamy z name, warto go też zachować
-    // w notes (bo company nie ma osobnego pola w UI obecnie poza zaawansowanymi).
-    // Customer ma `company` – zachowujemy je jako pole, NIE w notes.
 
     const notesParts: string[] = [];
     if (baseNotes) notesParts.push(baseNotes);
@@ -205,20 +201,27 @@ export function composeCandidates(
     if (!name) missing.push("name");
     if (!address) missing.push("address");
 
+    // Buduj customFields z zmapowanych kolumn (telefon/email/www/firma).
+    // Etykiety twardo PL — przy edycji user może je zmienić.
+    // Firmę tworzymy tylko gdy jest różna od name (czyli było osobne pole
+    // „nazwa" i osobne „firma" — dwie różne wartości).
+    const customFields: CustomField[] = [];
+    if (phone) customFields.push(makeCustomField("phone", "Telefon", phone));
+    if (phone2) customFields.push(makeCustomField("phone", "Telefon", phone2));
+    if (email) customFields.push(makeCustomField("email", "E-mail", email));
+    if (website)
+      customFields.push(makeCustomField("url", "Strona WWW", website));
+    if (company && company !== name && company !== fullName) {
+      customFields.push(makeCustomField("text", "Firma", company));
+    }
+
     out.push({
       rowId: i,
       valid: missing.length === 0,
       missing,
       name,
-      company:
-        company && company !== name && company !== fullName
-          ? company
-          : undefined,
       address,
-      phone: phone || undefined,
-      phone2: phone2 || undefined,
-      email: email || undefined,
-      website: website || undefined,
+      customFields: customFields.length > 0 ? customFields : undefined,
       notes,
       tags: tags.length ? tags : undefined,
       lastVisit,
