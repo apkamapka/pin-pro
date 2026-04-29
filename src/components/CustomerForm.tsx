@@ -1,13 +1,13 @@
 import { useState, useEffect, useRef } from "react";
 import {
   AlertCircle,
-  Briefcase,
-  ChevronDown,
-  ChevronUp,
   Globe,
+  Hash,
   Loader2,
+  Mail,
   MapPin,
   Phone,
+  Plus,
   Search,
   Trash2,
 } from "lucide-react";
@@ -24,12 +24,18 @@ import {
 } from "@/components/ui/select";
 import { IconPicker } from "@/components/IconPicker";
 import { TagsInput } from "@/components/TagsInput";
+import { CustomFieldRow } from "@/components/CustomFieldRow";
 import { useT } from "@/lib/i18n";
 import { useCustomers } from "@/store/customers";
-import type { Customer } from "@/types/customer";
+import type { Customer, CustomField, CustomFieldType } from "@/types/customer";
 import { isValidIconKey, type PinIconKey, ICON_PALETTE } from "@/lib/iconPalette";
 import { geocodeAddress, reverseGeocode } from "@/lib/geocode";
 import { collectAllTags } from "@/lib/searchCustomers";
+import {
+  getAllCustomFields,
+  makeCustomField,
+  pruneEmptyFields,
+} from "@/lib/customFields";
 import { toast } from "sonner";
 
 interface Props {
@@ -47,6 +53,29 @@ function toLocalInput(iso?: string): string {
 
 const NO_CATEGORY = "__none__"; // sentinel bo shadcn Select nie akceptuje pustych wartości
 
+/** Definicja chipa „+ Telefon" / „+ NIP" / „+ Inne pole".
+ *  Etykieta jest tłumaczona przez useT() w renderze, tutaj przechowujemy
+ *  tylko klucz do zlokalizowanego stringa + ikonę + typ pola. */
+type ChipDef = {
+  type: CustomFieldType;
+  /** Klucz w `t` używany jako default label nowego pola. */
+  defaultLabelKey:
+    | "fieldPhone"
+    | "fieldEmail"
+    | "fieldWebsite"
+    | "fieldTaxId"
+    | "fieldOther";
+  Icon: typeof Phone;
+};
+
+const CHIPS: ChipDef[] = [
+  { type: "phone", defaultLabelKey: "fieldPhone", Icon: Phone },
+  { type: "email", defaultLabelKey: "fieldEmail", Icon: Mail },
+  { type: "url", defaultLabelKey: "fieldWebsite", Icon: Globe },
+  { type: "tax_id", defaultLabelKey: "fieldTaxId", Icon: Hash },
+  { type: "text", defaultLabelKey: "fieldOther", Icon: Plus },
+];
+
 export function CustomerForm({ initial, editingId, onClose }: Props) {
   const t = useT();
   const addCustomer = useCustomers((s) => s.addCustomer);
@@ -60,15 +89,12 @@ export function CustomerForm({ initial, editingId, onClose }: Props) {
   const nameRef = useRef<HTMLInputElement>(null);
 
   const [name, setName] = useState(initial?.name ?? "");
-  const [company, setCompany] = useState(initial?.company ?? "");
-  const [profession, setProfession] = useState(initial?.profession ?? "");
   const [address, setAddress] = useState(initial?.address ?? "");
   const [lat, setLat] = useState<number | undefined>(initial?.lat);
   const [lng, setLng] = useState<number | undefined>(initial?.lng);
-  const [phone, setPhone] = useState(initial?.phone ?? "");
-  const [phone2, setPhone2] = useState(initial?.phone2 ?? "");
-  const [email, setEmail] = useState(initial?.email ?? "");
-  const [website, setWebsite] = useState(initial?.website ?? "");
+  const [customFields, setCustomFields] = useState<CustomField[]>(
+    initial ? getAllCustomFields(initial as Customer) : [],
+  );
   const [categoryId, setCategoryId] = useState<string>(
     initial?.categoryId ?? NO_CATEGORY,
   );
@@ -83,27 +109,15 @@ export function CustomerForm({ initial, editingId, onClose }: Props) {
   const [geocoding, setGeocoding] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
-  // "Więcej pól" rozwijalne: w edycji otwórz od razu jeśli któreś wypełnione
-  const [moreOpen, setMoreOpen] = useState(
-    Boolean(
-      initial?.company ||
-        initial?.profession ||
-        initial?.phone2 ||
-        initial?.website,
-    ),
-  );
+  /** ID pola które właśnie zostało dodane chipem — żeby auto-focusować input. */
+  const [justAddedId, setJustAddedId] = useState<string | null>(null);
 
   useEffect(() => {
     setName(initial?.name ?? "");
-    setCompany(initial?.company ?? "");
-    setProfession(initial?.profession ?? "");
     setAddress(initial?.address ?? "");
     setLat(initial?.lat);
     setLng(initial?.lng);
-    setPhone(initial?.phone ?? "");
-    setPhone2(initial?.phone2 ?? "");
-    setEmail(initial?.email ?? "");
-    setWebsite(initial?.website ?? "");
+    setCustomFields(initial ? getAllCustomFields(initial as Customer) : []);
     setCategoryId(initial?.categoryId ?? NO_CATEGORY);
     setIcon(
       isValidIconKey(initial?.icon) ? (initial!.icon as PinIconKey) : "auto",
@@ -112,20 +126,12 @@ export function CustomerForm({ initial, editingId, onClose }: Props) {
     setNotes(initial?.notes ?? "");
     setTags(initial?.tags ?? []);
     setFormError(null);
-    setMoreOpen(
-      Boolean(
-        initial?.company ||
-          initial?.profession ||
-          initial?.phone2 ||
-          initial?.website,
-      ),
-    );
+    setJustAddedId(null);
   }, [initial, editingId]);
 
   /**
    * Quick-add z GPS: jeśli formularz dostał lat/lng (z mapy lub GPS),
    * a adres jest pusty, w tle pobierz adres przez reverse geocode.
-   * Robione raz, po pierwszym mount/update z tymi danymi.
    */
   useEffect(() => {
     let cancelled = false;
@@ -143,7 +149,7 @@ export function CustomerForm({ initial, editingId, onClose }: Props) {
         if (r) setAddress(r);
       })
       .catch(() => {
-        // Cisza – user może uzupełnić ręcznie. Toast byłby tu nachalny.
+        // Cisza – user może uzupełnić ręcznie.
       })
       .finally(() => {
         if (!cancelled) setGeocoding(false);
@@ -156,20 +162,49 @@ export function CustomerForm({ initial, editingId, onClose }: Props) {
 
   const hasCoords = lat != null && lng != null;
 
-  // Auto-focus pola nazwy w trybie "quick-add" (mamy współrzędne, brak nazwy).
-  // Bez tego serwisant w aucie musiałby kliknąć w input zanim zacznie pisać.
+  // Auto-focus pola nazwy w trybie "quick-add"
   useEffect(() => {
     if (!editingId && initial?.lat != null && initial?.lng != null && !initial?.name) {
-      // krótki delay – Sheet ma transition, fokus przed nim się gubi
       const id = window.setTimeout(() => nameRef.current?.focus(), 250);
       return () => window.clearTimeout(id);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [editingId]);
 
+  /** Mapuje klucz chipa na zlokalizowany default label. */
+  const chipLabel = (key: ChipDef["defaultLabelKey"]): string => {
+    const dict: Record<ChipDef["defaultLabelKey"], string> = {
+      fieldPhone: t.fieldPhone,
+      fieldEmail: t.fieldEmail,
+      fieldWebsite: t.fieldWebsite,
+      fieldTaxId: t.fieldTaxId,
+      fieldOther: "", // pole „Inne" – user wpisuje sam
+    };
+    return dict[key];
+  };
+
+  const addField = (chip: ChipDef) => {
+    const f = makeCustomField(chip.type, chipLabel(chip.defaultLabelKey));
+    setCustomFields((prev) => [...prev, f]);
+    setJustAddedId(f.id);
+  };
+
+  const updateField = (
+    id: string,
+    patch: Partial<Pick<CustomField, "label" | "value">>,
+  ) => {
+    setCustomFields((prev) =>
+      prev.map((f) => (f.id === id ? { ...f, ...patch } : f)),
+    );
+  };
+
+  const removeField = (id: string) => {
+    setCustomFields((prev) => prev.filter((f) => f.id !== id));
+  };
+
   const handleGeocode = async () => {
     if (!address.trim()) {
-      setFormError("Wpisz adres, zanim klikniesz „Znajdź”.");
+      setFormError(t.errorEnterAddressBeforeFind);
       return;
     }
     setGeocoding(true);
@@ -177,18 +212,14 @@ export function CustomerForm({ initial, editingId, onClose }: Props) {
     try {
       const r = await geocodeAddress(address, { defaultCountry });
       if (!r) {
-        setFormError(
-          "Nie znaleziono tego adresu. Spróbuj wpisać go dokładniej (ulica, numer, miasto) lub zaznacz miejsce długim naciśnięciem na mapie.",
-        );
+        setFormError(t.errorAddressNotFound);
       } else {
         setLat(r.lat);
         setLng(r.lng);
-        toast.success("Adres znaleziony");
+        toast.success(t.addressFound);
       }
     } catch (err) {
-      setFormError(
-        "Nie udało się połączyć z serwisem geokodowania. Sprawdź internet lub zaznacz miejsce na mapie.",
-      );
+      setFormError(t.errorGeocodeOffline);
     } finally {
       setGeocoding(false);
     }
@@ -202,7 +233,7 @@ export function CustomerForm({ initial, editingId, onClose }: Props) {
       const r = await reverseGeocode(lat, lng);
       if (r) setAddress(r);
     } catch {
-      setFormError("Nie udało się pobrać adresu z punktu na mapie.");
+      setFormError(t.errorReverseGeocode);
     } finally {
       setGeocoding(false);
     }
@@ -217,16 +248,13 @@ export function CustomerForm({ initial, editingId, onClose }: Props) {
       return;
     }
     if (!address.trim() && !hasCoords) {
-      setFormError(
-        "Podaj adres albo zaznacz miejsce na mapie (długie naciśnięcie).",
-      );
+      setFormError(t.errorAddressOrPin);
       return;
     }
 
     let coordsLat = lat;
     let coordsLng = lng;
 
-    // Try auto-geocode only if user didn't already set coords
     if (coordsLat == null || coordsLng == null) {
       setSubmitting(true);
       try {
@@ -237,16 +265,12 @@ export function CustomerForm({ initial, editingId, onClose }: Props) {
           setLat(r.lat);
           setLng(r.lng);
         } else {
-          setFormError(
-            "Nie znaleziono adresu. Kliknij „Znajdź” obok adresu albo długo naciśnij miejsce na mapie, a potem zapisz.",
-          );
+          setFormError(t.errorAddressNotFoundOnSave);
           setSubmitting(false);
           return;
         }
       } catch {
-        setFormError(
-          "Problem z geokodowaniem. Długo naciśnij miejsce na mapie, aby zaznaczyć lokalizację ręcznie.",
-        );
+        setFormError(t.errorGeocodeProblemOnSave);
         setSubmitting(false);
         return;
       } finally {
@@ -254,17 +278,24 @@ export function CustomerForm({ initial, editingId, onClose }: Props) {
       }
     }
 
+    const cleanFields = pruneEmptyFields(customFields);
+
     const data = {
       name: name.trim(),
-      company: company.trim() || undefined,
-      profession: profession.trim() || undefined,
+      // Legacy pola czyścimy świadomie — nowy formularz nie używa ich
+      // przy zapisie. Migracja v6 już je przeniosła do customFields.
+      // Przy edycji starego klienta: getAllCustomFields() zassało wartości,
+      // więc po zapisie wszystko jest spójnie w customFields.
+      company: undefined,
+      profession: undefined,
+      phone: undefined,
+      phone2: undefined,
+      email: undefined,
+      website: undefined,
       address: address.trim() || `${coordsLat!.toFixed(5)}, ${coordsLng!.toFixed(5)}`,
       lat: coordsLat!,
       lng: coordsLng!,
-      phone: phone.trim() || undefined,
-      phone2: phone2.trim() || undefined,
-      email: email.trim() || undefined,
-      website: website.trim() || undefined,
+      customFields: cleanFields.length > 0 ? cleanFields : undefined,
       categoryId: categoryId === NO_CATEGORY ? undefined : categoryId,
       isDone: initial?.isDone ?? false,
       icon: icon === "auto" ? undefined : icon,
@@ -306,6 +337,7 @@ export function CustomerForm({ initial, editingId, onClose }: Props) {
         </div>
       )}
 
+      {/* === SZTYWNE POLA === */}
       <div className="space-y-1.5">
         <Label htmlFor="cf-name">{t.name} *</Label>
         <Input
@@ -326,7 +358,7 @@ export function CustomerForm({ initial, editingId, onClose }: Props) {
             id="cf-address"
             value={address}
             onChange={(e) => setAddress(e.target.value)}
-            placeholder="np. Marszałkowska 10, Warszawa"
+            placeholder={t.addressPlaceholder}
             autoComplete="off"
           />
           <Button
@@ -341,7 +373,7 @@ export function CustomerForm({ initial, editingId, onClose }: Props) {
             ) : (
               <Search className="mr-1.5 h-4 w-4" />
             )}
-            Znajdź
+            {t.find}
           </Button>
         </div>
         {hasCoords && (
@@ -365,152 +397,70 @@ export function CustomerForm({ initial, editingId, onClose }: Props) {
         )}
         {!hasCoords && (
           <p className="text-xs text-muted-foreground">
-            Wpisz adres i kliknij „Znajdź”, albo długo naciśnij miejsce na mapie.
+            {t.addressHint}
           </p>
         )}
       </div>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <div className="space-y-1.5">
-          <Label htmlFor="cf-phone">{t.phone}</Label>
-          <Input
-            id="cf-phone"
-            type="tel"
-            value={phone}
-            onChange={(e) => setPhone(e.target.value)}
-          />
+      <div className="space-y-1.5">
+        <Label htmlFor="cf-appt">{t.nextAppointment}</Label>
+        <Input
+          id="cf-appt"
+          type="datetime-local"
+          value={nextAppt}
+          onChange={(e) => setNextAppt(e.target.value)}
+        />
+      </div>
+
+      {/* === POLA CUSTOM (telefon, email, NIP, ...) === */}
+      {customFields.length > 0 && (
+        <div className="space-y-2">
+          {customFields.map((f) => (
+            <CustomFieldRow
+              key={f.id}
+              field={f}
+              autoFocus={f.id === justAddedId}
+              onChange={(patch) => updateField(f.id, patch)}
+              onRemove={() => removeField(f.id)}
+            />
+          ))}
         </div>
-        <div className="space-y-1.5">
-          <Label htmlFor="cf-email">{t.email}</Label>
-          <Input
-            id="cf-email"
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-          />
+      )}
+
+      {/* === CHIPY DODAWANIA === */}
+      <div className="space-y-1.5">
+        <Label className="text-xs uppercase tracking-wide text-muted-foreground">
+          {t.addField}
+        </Label>
+        <div className="flex flex-wrap gap-2">
+          {CHIPS.map((chip) => {
+            const I = chip.Icon;
+            return (
+              <Button
+                key={chip.defaultLabelKey}
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => addField(chip)}
+                className="h-8 rounded-full text-xs"
+              >
+                <I className="mr-1.5 h-3.5 w-3.5" />
+                {chip.defaultLabelKey === "fieldOther"
+                  ? t.fieldOther
+                  : chipLabel(chip.defaultLabelKey)}
+              </Button>
+            );
+          })}
         </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <div className="space-y-1.5">
-          <Label>{t.category}</Label>
-          <Select value={categoryId} onValueChange={setCategoryId}>
-            <SelectTrigger>
-              <SelectValue placeholder={t.selectCategory} />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value={NO_CATEGORY}>
-                <span className="text-muted-foreground">
-                  {t.categoryNone}
-                </span>
-              </SelectItem>
-              {categories.map((c) => {
-                const Icon = ICON_PALETTE.find((p) => p.key === c.icon)?.Icon;
-                return (
-                  <SelectItem key={c.id} value={c.id}>
-                    <span className="flex items-center gap-2">
-                      <span
-                        className="grid h-4 w-4 place-items-center rounded-full text-white shrink-0"
-                        style={{ backgroundColor: c.color }}
-                        aria-hidden
-                      >
-                        {Icon && <Icon className="h-2.5 w-2.5" strokeWidth={3} />}
-                      </span>
-                      <span className="truncate">{c.name}</span>
-                    </span>
-                  </SelectItem>
-                );
-              })}
-            </SelectContent>
-          </Select>
-        </div>
-        <div className="space-y-1.5">
-          <Label htmlFor="cf-appt">{t.nextAppointment}</Label>
-          <Input
-            id="cf-appt"
-            type="datetime-local"
-            value={nextAppt}
-            onChange={(e) => setNextAppt(e.target.value)}
-          />
-        </div>
-      </div>
-
+      {/* === IKONA === */}
       <div className="space-y-1.5">
         <Label>{t.icon}</Label>
         <IconPicker value={icon} onChange={setIcon} />
       </div>
 
-      <div className="rounded-lg border">
-        <button
-          type="button"
-          onClick={() => setMoreOpen((v) => !v)}
-          className="flex w-full items-center justify-between px-3 py-2.5 text-sm font-medium hover:bg-muted/60"
-          aria-expanded={moreOpen}
-        >
-          <span>{moreOpen ? t.hideFields : t.moreFields}</span>
-          {moreOpen ? (
-            <ChevronUp className="h-4 w-4 text-muted-foreground" />
-          ) : (
-            <ChevronDown className="h-4 w-4 text-muted-foreground" />
-          )}
-        </button>
-        {moreOpen && (
-          <div className="space-y-4 border-t p-3">
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <div className="space-y-1.5">
-                <Label htmlFor="cf-company" className="flex items-center gap-1.5">
-                  <Briefcase className="h-3.5 w-3.5 text-muted-foreground" />
-                  {t.company}
-                </Label>
-                <Input
-                  id="cf-company"
-                  value={company}
-                  onChange={(e) => setCompany(e.target.value)}
-                  autoComplete="organization"
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="cf-profession">{t.clientProfession}</Label>
-                <Input
-                  id="cf-profession"
-                  value={profession}
-                  onChange={(e) => setProfession(e.target.value)}
-                  placeholder={t.clientProfessionPlaceholder}
-                  autoComplete="off"
-                />
-              </div>
-            </div>
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <div className="space-y-1.5">
-                <Label htmlFor="cf-phone2" className="flex items-center gap-1.5">
-                  <Phone className="h-3.5 w-3.5 text-muted-foreground" />
-                  {t.phone2}
-                </Label>
-                <Input
-                  id="cf-phone2"
-                  type="tel"
-                  value={phone2}
-                  onChange={(e) => setPhone2(e.target.value)}
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="cf-website" className="flex items-center gap-1.5">
-                  <Globe className="h-3.5 w-3.5 text-muted-foreground" />
-                  {t.website}
-                </Label>
-                <Input
-                  id="cf-website"
-                  type="url"
-                  value={website}
-                  onChange={(e) => setWebsite(e.target.value)}
-                  placeholder="https://"
-                />
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
-
+      {/* === NOTATKI === */}
       <div className="space-y-1.5">
         <Label htmlFor="cf-notes">{t.notes}</Label>
         <Textarea
@@ -521,6 +471,39 @@ export function CustomerForm({ initial, editingId, onClose }: Props) {
         />
       </div>
 
+      {/* === KATEGORIA === */}
+      <div className="space-y-1.5">
+        <Label>{t.category}</Label>
+        <Select value={categoryId} onValueChange={setCategoryId}>
+          <SelectTrigger>
+            <SelectValue placeholder={t.selectCategory} />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value={NO_CATEGORY}>
+              <span className="text-muted-foreground">{t.categoryNone}</span>
+            </SelectItem>
+            {categories.map((c) => {
+              const Icon = ICON_PALETTE.find((p) => p.key === c.icon)?.Icon;
+              return (
+                <SelectItem key={c.id} value={c.id}>
+                  <span className="flex items-center gap-2">
+                    <span
+                      className="grid h-4 w-4 place-items-center rounded-full text-white shrink-0"
+                      style={{ backgroundColor: c.color }}
+                      aria-hidden
+                    >
+                      {Icon && <Icon className="h-2.5 w-2.5" strokeWidth={3} />}
+                    </span>
+                    <span className="truncate">{c.name}</span>
+                  </span>
+                </SelectItem>
+              );
+            })}
+          </SelectContent>
+        </Select>
+      </div>
+
+      {/* === TAGI === */}
       <div className="space-y-1.5">
         <Label htmlFor="cf-tags">{t.tags}</Label>
         <TagsInput
@@ -532,6 +515,7 @@ export function CustomerForm({ initial, editingId, onClose }: Props) {
         />
       </div>
 
+      {/* === STOPKA === */}
       <div className="sticky bottom-0 -mx-1 flex flex-col gap-2 border-t bg-background/95 px-1 pt-3 pb-1 backdrop-blur sm:flex-row sm:justify-end">
         {editingId && (
           <Button
