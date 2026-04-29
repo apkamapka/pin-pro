@@ -145,16 +145,38 @@ const dict = {
     confirm: "Potwierdź",
     deleteConfirm: "Na pewno usunąć tego klienta?",
     thresholds: "Progi kolorów (dni)",
-    profession: "Profesja",
-    professionPlaceholder: "Wpisz swoją profesję, np. Hydraulik",
-    professionAdd: "Dodaj",
-    yourProfessions: "Twoje profesje",
-    professionsEmpty: "Tu zapiszą się Twoje profesje",
-    professionActive: "Aktywna",
-    professionRemove: "Usuń",
-    professionRemoved: "Usunięto profesję",
-    professionAdded: "Dodano profesję",
-    professionExists: "Ta profesja już istnieje",
+
+    // Pola custom (telefon, e-mail, NIP, dowolne)
+    addField: "Dodaj pole",
+    fieldPhone: "Telefon",
+    fieldEmail: "E-mail",
+    fieldWebsite: "Strona WWW",
+    fieldTaxId: "NIP",
+    fieldOther: "Inne pole…",
+    customFieldLabelPlaceholder: "Nazwa pola…",
+    customFieldValuePlaceholder: "Wartość…",
+    customFieldEditLabel: "Kliknij, aby zmienić nazwę pola",
+    customFieldLabelAria: "Nazwa pola",
+    customFieldRemove: "Usuń pole",
+
+    // Geokodowanie / błędy formularza
+    find: "Znajdź",
+    addressPlaceholder: "np. Marszałkowska 10, Warszawa",
+    addressHint: "Wpisz adres i kliknij „Znajdź”, albo długo naciśnij miejsce na mapie.",
+    addressFound: "Adres znaleziony",
+    errorEnterAddressBeforeFind: "Wpisz adres, zanim klikniesz „Znajdź”.",
+    errorAddressNotFound:
+      "Nie znaleziono tego adresu. Spróbuj wpisać go dokładniej (ulica, numer, miasto) lub zaznacz miejsce długim naciśnięciem na mapie.",
+    errorGeocodeOffline:
+      "Nie udało się połączyć z serwisem geokodowania. Sprawdź internet lub zaznacz miejsce na mapie.",
+    errorReverseGeocode: "Nie udało się pobrać adresu z punktu na mapie.",
+    errorAddressOrPin:
+      "Podaj adres albo zaznacz miejsce na mapie (długie naciśnięcie).",
+    errorAddressNotFoundOnSave:
+      "Nie znaleziono adresu. Kliknij „Znajdź” obok adresu albo długo naciśnij miejsce na mapie, a potem zapisz.",
+    errorGeocodeProblemOnSave:
+      "Problem z geokodowaniem. Długo naciśnij miejsce na mapie, aby zaznaczyć lokalizację ręcznie.",
+
     language: "Język",
     polish: "Polski",
     english: "English",
@@ -504,16 +526,38 @@ const dict = {
     confirm: "Confirm",
     deleteConfirm: "Delete this customer?",
     thresholds: "Color thresholds (days)",
-    profession: "Profession",
-    professionPlaceholder: "Type your profession, e.g. Plumber",
-    professionAdd: "Add",
-    yourProfessions: "Your professions",
-    professionsEmpty: "Your professions will appear here",
-    professionActive: "Active",
-    professionRemove: "Remove",
-    professionRemoved: "Profession removed",
-    professionAdded: "Profession added",
-    professionExists: "This profession already exists",
+
+    // Custom fields (phone, email, tax id, anything)
+    addField: "Add field",
+    fieldPhone: "Phone",
+    fieldEmail: "Email",
+    fieldWebsite: "Website",
+    fieldTaxId: "Tax ID",
+    fieldOther: "Other field…",
+    customFieldLabelPlaceholder: "Field name…",
+    customFieldValuePlaceholder: "Value…",
+    customFieldEditLabel: "Click to rename this field",
+    customFieldLabelAria: "Field name",
+    customFieldRemove: "Remove field",
+
+    // Geocoding / form errors
+    find: "Find",
+    addressPlaceholder: "e.g. 10 Downing St, London",
+    addressHint: "Type an address and click \"Find\", or long-press a spot on the map.",
+    addressFound: "Address found",
+    errorEnterAddressBeforeFind: "Enter an address before clicking \"Find\".",
+    errorAddressNotFound:
+      "Address not found. Try a more precise form (street, number, city) or long-press a spot on the map.",
+    errorGeocodeOffline:
+      "Could not reach the geocoding service. Check your connection or pick the spot on the map.",
+    errorReverseGeocode: "Could not get an address from that map point.",
+    errorAddressOrPin:
+      "Provide an address or pick a spot on the map (long-press).",
+    errorAddressNotFoundOnSave:
+      "Address not found. Click \"Find\" next to the address or long-press a spot on the map, then save.",
+    errorGeocodeProblemOnSave:
+      "Geocoding problem. Long-press a spot on the map to set the location manually.",
+
     language: "Language",
     polish: "Polski",
     english: "English",
