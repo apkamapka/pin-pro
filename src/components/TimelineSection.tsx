@@ -395,17 +395,23 @@ export function TimelineSection({
             </div>
           </div>
 
-          <div className="flex justify-end gap-2">
+          <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
             <Button
               type="button"
               variant="outline"
               size="sm"
               onClick={resetForm}
+              className="w-full sm:w-auto"
             >
               <X className="mr-1.5 h-4 w-4" />
               {t.cancel}
             </Button>
-            <Button type="button" size="sm" onClick={handleSubmit}>
+            <Button
+              type="button"
+              size="sm"
+              onClick={handleSubmit}
+              className="w-full sm:w-auto"
+            >
               {editingId ? t.timelineUpdate : t.timelineSave}
             </Button>
           </div>
@@ -557,12 +563,13 @@ export function TimelineSection({
               </div>
             </div>
           )}
-          <div className="flex justify-end gap-2 pt-2">
+          <div className="flex flex-col-reverse gap-2 pt-2 sm:flex-row sm:justify-end">
             <Button
               type="button"
               variant="outline"
               size="sm"
               onClick={() => setPickerOpen(false)}
+              className="w-full sm:w-auto"
             >
               {t.cancel}
             </Button>
@@ -571,6 +578,7 @@ export function TimelineSection({
               size="sm"
               onClick={() => setPickerOpen(false)}
               disabled={photos.length === 0}
+              className="w-full sm:w-auto"
             >
               {t.photoPickConfirm}
             </Button>
