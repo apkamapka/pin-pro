@@ -346,6 +346,9 @@ const dict = {
     timelineText: "Opis",
     timelineTextPlaceholder: "Co się wydarzyło?",
     timelineSave: "Dodaj",
+    timelineEdit: "Edytuj wpis",
+    timelineUpdate: "Zapisz zmiany",
+    timelineUpdated: "Zaktualizowano wpis",
     timelineRemoved: "Usunięto wpis",
     timelineRemoveConfirm: "Usunąć ten wpis?",
     timelineKinds: {
@@ -723,6 +726,9 @@ const dict = {
     timelineText: "Description",
     timelineTextPlaceholder: "What happened?",
     timelineSave: "Add",
+    timelineEdit: "Edit entry",
+    timelineUpdate: "Save changes",
+    timelineUpdated: "Entry updated",
     timelineRemoved: "Entry removed",
     timelineRemoveConfirm: "Remove this entry?",
     timelineKinds: {
