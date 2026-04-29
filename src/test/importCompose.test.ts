@@ -133,7 +133,10 @@ describe("composeCandidates", () => {
     expect(result[0].valid).toBe(true);
     expect(result[0].name).toBe("Jan Kowalski");
     expect(result[0].address).toBe("Marszałkowska 1, Warszawa");
-    expect(result[0].phone).toBe("601-234-567");
+    // Telefon trafia do customFields jako pole typu "phone" — od v6
+    // wszystkie pola kontaktowe są user-defined.
+    const phoneField = result[0].customFields?.find((f) => f.type === "phone");
+    expect(phoneField?.value).toBe("601-234-567");
     expect(result[0].rowId).toBe(0);
   });
 
@@ -174,8 +177,11 @@ describe("composeCandidates", () => {
     const mapping = { company: "Firma", address: "Adres" };
     const result = composeCandidates(rows, mapping, { unmappedHeaders: [] });
     expect(result[0].name).toBe("Nowak Sp. z o.o.");
-    // company nie powinno też być duplikowane w polu company w tym przypadku
-    expect(result[0].company).toBeUndefined();
+    // company użyte jako name → nie powinno być duplikowane w customFields
+    const companyField = result[0].customFields?.find(
+      (f) => f.label === "Firma",
+    );
+    expect(companyField).toBeUndefined();
   });
 
   it("keeps company field separately when name is different", () => {
@@ -190,7 +196,11 @@ describe("composeCandidates", () => {
     };
     const result = composeCandidates(rows, mapping, { unmappedHeaders: [] });
     expect(result[0].name).toBe("Jan Kowalski");
-    expect(result[0].company).toBe("ACME");
+    // Firma trafia do customFields jako pole text z labelem „Firma"
+    const companyField = result[0].customFields?.find(
+      (f) => f.label === "Firma",
+    );
+    expect(companyField?.value).toBe("ACME");
   });
 
   it("flags rows with missing name", () => {
