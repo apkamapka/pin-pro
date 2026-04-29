@@ -73,18 +73,46 @@ export interface TimelineEntry {
   createdAt: string;
 }
 
+/**
+ * Typ pola custom – determinuje ikonę, klikalność i input type.
+ *
+ * - `phone` → ikona telefonu, link `tel:`, input type=tel
+ * - `email` → ikona koperty, link `mailto:`, input type=email
+ * - `url`   → ikona globu, link `https://...`, input type=url
+ * - `tax_id`→ ikona dokumentu (np. NIP, REGON, PESEL), bez linku
+ * - `text`  → ogólne pole, bez ikony specjalnej, bez linku
+ */
+export type CustomFieldType = "text" | "phone" | "email" | "url" | "tax_id";
+
+/** User-defined pole w karcie klienta (telefon, email, NIP, dowolne).
+ *  Etykieta jest edytowalna – chipy dają tylko sensowny default. */
+export interface CustomField {
+  id: string;
+  label: string;
+  value: string;
+  type: CustomFieldType;
+}
+
 export interface Customer {
   id: string;
   name: string;
+  /** @deprecated zmigrowane do customFields w v6, zostaje dla starych eksportów */
   company?: string;
+  /** @deprecated zmigrowane do customFields w v6, zostaje dla starych eksportów */
   profession?: string;
   address: string;
   lat: number;
   lng: number;
+  /** @deprecated zmigrowane do customFields w v6, zostaje dla starych eksportów */
   phone?: string;
+  /** @deprecated zmigrowane do customFields w v6, zostaje dla starych eksportów */
   phone2?: string;
+  /** @deprecated zmigrowane do customFields w v6, zostaje dla starych eksportów */
   email?: string;
+  /** @deprecated zmigrowane do customFields w v6, zostaje dla starych eksportów */
   website?: string;
+  /** Dowolne user-defined pola. Tu trafiają telefony, e-maile, NIP-y etc. */
+  customFields?: CustomField[];
   notes?: string;
 
   /** Kategoria user-defined (opcjonalna). */
