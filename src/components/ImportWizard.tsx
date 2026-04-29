@@ -236,14 +236,10 @@ export function ImportWizard({ open, onOpenChange }: Props) {
       for (const c of importable) {
         addCustomer({
           name: c.name,
-          company: c.company,
           address: c.address,
           lat: c.lat!,
           lng: c.lng!,
-          phone: c.phone,
-          phone2: c.phone2,
-          email: c.email,
-          website: c.website,
+          customFields: c.customFields,
           notes: c.notes,
           tags: c.tags,
           lastVisit: c.lastVisit,
