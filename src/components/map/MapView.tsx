@@ -33,6 +33,7 @@ import { CategoryBadge, DoneBadge } from "@/components/CategoryBadge";
 import { differenceInCalendarDays, format } from "date-fns";
 import { ICON_PALETTE } from "@/lib/iconPalette";
 import { getThumbnailPhoto } from "@/lib/mediaUtils";
+import { getFirstFieldByType } from "@/lib/customFields";
 import { collectAllTags } from "@/lib/searchCustomers";
 import { toast } from "sonner";
 
@@ -306,15 +307,19 @@ export function MapView({
                     </div>
                   )}
 
-                  {c.phone && (
-                    <a
-                      href={`tel:${c.phone}`}
-                      className="flex items-center gap-1.5 text-xs text-primary hover:underline"
-                    >
-                      <Phone className="h-3.5 w-3.5" />
-                      {c.phone}
-                    </a>
-                  )}
+                  {(() => {
+                    const tel = getFirstFieldByType(c, "phone");
+                    if (!tel) return null;
+                    return (
+                      <a
+                        href={`tel:${tel.value}`}
+                        className="flex items-center gap-1.5 text-xs text-primary hover:underline"
+                      >
+                        <Phone className="h-3.5 w-3.5" />
+                        {tel.value}
+                      </a>
+                    );
+                  })()}
 
                   {c.notes && (
                     <p className="line-clamp-2 text-xs text-muted-foreground">
