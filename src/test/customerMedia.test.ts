@@ -23,8 +23,6 @@ describe("customers store: Pakiet A", () => {
     useCustomers.setState({
       customers: [],
       categories: [],
-      professions: [],
-      activeProfession: null,
       seeded: true,
     });
   });
