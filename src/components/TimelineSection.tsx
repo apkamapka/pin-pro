@@ -9,6 +9,7 @@ import {
   Images,
   Loader2,
   MapPin,
+  Pencil,
   Phone,
   Plus,
   Trash2,
@@ -94,9 +95,11 @@ export function TimelineSection({
   const t = useT();
   const addPhoto = useCustomers((s) => s.addPhoto);
   const addEntry = useCustomers((s) => s.addTimelineEntry);
+  const updateEntry = useCustomers((s) => s.updateTimelineEntry);
   const removeEntry = useCustomers((s) => s.removeTimelineEntry);
 
   const [showForm, setShowForm] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [kind, setKind] = useState<TimelineKind>("visit");
   const [date, setDate] = useState(toLocalInput(new Date().toISOString()));
   const [text, setText] = useState("");
@@ -120,6 +123,16 @@ export function TimelineSection({
     setText("");
     setAttachedIds([]);
     setShowForm(false);
+    setEditingId(null);
+  };
+
+  const handleEdit = (entry: TimelineEntry) => {
+    setEditingId(entry.id);
+    setKind(entry.kind);
+    setDate(toLocalInput(entry.date));
+    setText(entry.text ?? "");
+    setAttachedIds(entry.photoIds ? [...entry.photoIds] : []);
+    setShowForm(true);
   };
 
   const handleFiles = async (files: FileList | null) => {
@@ -172,13 +185,23 @@ export function TimelineSection({
 
   const handleSubmit = () => {
     if (!date) return;
-    addEntry(customerId, {
-      date: new Date(date).toISOString(),
-      kind,
-      text: text.trim() || undefined,
-      photoIds: attachedIds.length > 0 ? [...attachedIds] : undefined,
-    });
-    toast.success(t.saved);
+    if (editingId) {
+      updateEntry(customerId, editingId, {
+        date: new Date(date).toISOString(),
+        kind,
+        text: text.trim() || undefined,
+        photoIds: attachedIds.length > 0 ? [...attachedIds] : undefined,
+      });
+      toast.success(t.timelineUpdated);
+    } else {
+      addEntry(customerId, {
+        date: new Date(date).toISOString(),
+        kind,
+        text: text.trim() || undefined,
+        photoIds: attachedIds.length > 0 ? [...attachedIds] : undefined,
+      });
+      toast.success(t.saved);
+    }
     resetForm();
   };
 
@@ -220,6 +243,11 @@ export function TimelineSection({
 
       {showForm && (
         <div className="space-y-3 rounded-lg border p-3">
+          {editingId && (
+            <div className="text-xs font-medium text-primary">
+              {t.timelineEdit}
+            </div>
+          )}
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div className="space-y-1.5">
               <Label htmlFor="tl-kind">{t.timelineKind}</Label>
@@ -378,7 +406,7 @@ export function TimelineSection({
               {t.cancel}
             </Button>
             <Button type="button" size="sm" onClick={handleSubmit}>
-              {t.timelineSave}
+              {editingId ? t.timelineUpdate : t.timelineSave}
             </Button>
           </div>
         </div>
@@ -394,7 +422,13 @@ export function TimelineSection({
               .map(photosById)
               .filter((p): p is MediaAttachment => !!p);
             return (
-              <li key={e.id} className="flex gap-3 rounded-lg border p-2.5">
+              <li
+                key={e.id}
+                className={cn(
+                  "flex gap-3 rounded-lg border p-2.5",
+                  editingId === e.id && "border-primary bg-primary/5",
+                )}
+              >
                 <div
                   className={`mt-0.5 shrink-0 ${KIND_TONE[e.kind]}`}
                   aria-hidden
@@ -439,16 +473,28 @@ export function TimelineSection({
                     </div>
                   )}
                 </div>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  className="h-7 w-7 shrink-0 text-muted-foreground hover:text-destructive"
-                  onClick={() => handleRemove(e.id)}
-                  aria-label={t.delete}
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
+                <div className="flex shrink-0 flex-col gap-1">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="h-7 w-7 text-muted-foreground hover:text-primary"
+                    onClick={() => handleEdit(e)}
+                    aria-label={t.timelineEdit}
+                  >
+                    <Pencil className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="h-7 w-7 text-muted-foreground hover:text-destructive"
+                    onClick={() => handleRemove(e.id)}
+                    aria-label={t.delete}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
               </li>
             );
           })}
