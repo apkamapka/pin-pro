@@ -145,6 +145,7 @@ export function TimelineSection({
         const compressed = await compressImage(file, {
           maxDim: 1600,
           quality: 0.8,
+          targetBytes: 200_000,
         });
         try {
           const p = addPhoto(customerId, {
