@@ -52,6 +52,7 @@ export function PhotosSection({ customerId, photos, thumbnailPhotoId }: Props) {
         const compressed = await compressImage(file, {
           maxDim: 1600,
           quality: 0.8,
+          targetBytes: 200_000,
         });
         try {
           addPhoto(customerId, {
