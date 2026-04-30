@@ -60,20 +60,49 @@ function MapEvents({
 }) {
   const timer = useRef<number | null>(null);
 
+  // Kasuje aktywny timer long-pressa.
+  // Wywoływane przy każdym zdarzeniu które robi long-press niewykonalny:
+  // - mouseup, mousemove (user puścił / przesunął palec normalnie)
+  // - blur okna albo visibilitychange (apka straciła fokus, np. user
+  //   przeszedł do Google Maps z poziomu nawigacji). Bez tego timer
+  //   tykał dalej w tle i odpalał `onLongPress` po powrocie do apki,
+  //   otwierając zombie-formularz "Dodaj pinezkę".
+  const cancelTimer = useCallback(() => {
+    if (timer.current) {
+      window.clearTimeout(timer.current);
+      timer.current = null;
+    }
+  }, []);
+
+  useEffect(() => {
+    const onVisibility = () => {
+      if (document.hidden) cancelTimer();
+    };
+    window.addEventListener("blur", cancelTimer);
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => {
+      window.removeEventListener("blur", cancelTimer);
+      document.removeEventListener("visibilitychange", onVisibility);
+      cancelTimer();
+    };
+  }, [cancelTimer]);
+
   useMapEvents({
     mousedown(e) {
-      if (timer.current) window.clearTimeout(timer.current);
+      cancelTimer();
       timer.current = window.setTimeout(() => {
+        timer.current = null;
         onLongPress(e.latlng.lat, e.latlng.lng);
       }, 600);
     },
     mouseup() {
-      if (timer.current) window.clearTimeout(timer.current);
+      cancelTimer();
     },
     mousemove() {
-      if (timer.current) window.clearTimeout(timer.current);
+      cancelTimer();
     },
     contextmenu(e) {
+      cancelTimer();
       e.originalEvent.preventDefault();
       onLongPress(e.latlng.lat, e.latlng.lng);
     },
@@ -517,7 +546,7 @@ export function MapView({
           onClick={onAddNew}
           className="h-14 w-14 rounded-full shadow-floating"
           size="icon"
-          aria-label={t.addCustomer}
+          aria-label={t.addPin}
         >
           <Plus className="h-6 w-6" />
         </Button>
