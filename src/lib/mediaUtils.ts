@@ -28,19 +28,63 @@ export interface CompressImageOptions {
   quality?: number;
   /** Docelowy mimeType. Domyślnie 'image/jpeg'. */
   mimeType?: "image/jpeg" | "image/webp";
+  /**
+   * Docelowy maksymalny rozmiar w bajtach. Jeśli podany, funkcja iteracyjnie
+   * zmniejsza jakość JPEG (i jeśli trzeba — wymiary), aż wynikowe zdjęcie
+   * zmieści się poniżej tego limitu. Bez tego parametru używana jest tylko
+   * stała `quality` z opcji.
+   *
+   * Przykład: `targetBytes: 200_000` daje zdjęcia ~200 KB, dzięki czemu
+   * localStorage (~5 MB limit) nie zapełnia się po kilkudziesięciu zdjęciach.
+   */
+  targetBytes?: number;
 }
 
 export async function compressImage(
   file: File | Blob,
   opts: CompressImageOptions = {},
 ): Promise<CompressedImage> {
-  const maxDim = opts.maxDim ?? 1600;
-  const quality = opts.quality ?? 0.8;
+  const initialMaxDim = opts.maxDim ?? 1600;
+  const initialQuality = opts.quality ?? 0.8;
   const mimeType = opts.mimeType ?? "image/jpeg";
+  const targetBytes = opts.targetBytes;
 
   const fileDataUrl = await blobToBase64(file);
-
   const img = await loadImage(fileDataUrl);
+
+  // Pierwsza próba: użytkownikowe (lub domyślne) wymiary i jakość.
+  let result = renderToDataUrl(img, initialMaxDim, initialQuality, mimeType);
+
+  if (targetBytes && result.approxBytes > targetBytes) {
+    // Iteracyjnie obniżamy jakość. 0.4 to dolna granica akceptowalnej
+    // jakości — niżej zaczynają być widoczne mocne artefakty JPEG.
+    const qualitySteps = [0.7, 0.6, 0.5, 0.4];
+    for (const q of qualitySteps) {
+      result = renderToDataUrl(img, initialMaxDim, q, mimeType);
+      if (result.approxBytes <= targetBytes) break;
+    }
+
+    // Nadal za duże? Zmniejszamy wymiary (zachowując jakość 0.6).
+    if (result.approxBytes > targetBytes) {
+      const dimSteps = [1280, 1024, 800];
+      for (const dim of dimSteps) {
+        if (dim >= initialMaxDim) continue;
+        result = renderToDataUrl(img, dim, 0.6, mimeType);
+        if (result.approxBytes <= targetBytes) break;
+      }
+    }
+  }
+
+  return result;
+}
+
+/** Renderuje obrazek na canvas i zwraca skompresowany dataUrl. */
+function renderToDataUrl(
+  img: HTMLImageElement,
+  maxDim: number,
+  quality: number,
+  mimeType: "image/jpeg" | "image/webp",
+): CompressedImage {
   const scale = Math.min(1, maxDim / Math.max(img.naturalWidth, img.naturalHeight));
   const width = Math.max(1, Math.round(img.naturalWidth * scale));
   const height = Math.max(1, Math.round(img.naturalHeight * scale));
