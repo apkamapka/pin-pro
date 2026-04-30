@@ -99,7 +99,7 @@ const Index = () => {
       />
     );
   } else if (sheet.kind === "add") {
-    sheetTitle = t.addCustomer;
+    sheetTitle = t.addPin;
     sheetDescription =
       "Wypelnij formularz, aby dodac nowego klienta do mapy.";
     sheetBody = (
