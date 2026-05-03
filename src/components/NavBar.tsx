@@ -62,7 +62,10 @@ export function NavBar({ active, onChange, variant }: Props) {
         <span className="grid h-7 w-7 place-items-center rounded-lg bg-primary text-primary-foreground">
           <Map className="h-4 w-4" />
         </span>
-        SerwisMap
+        <span>
+          <span className="text-foreground">Map</span>
+          <span className="text-status-ok">elo</span>
+        </span>
       </div>
       {items.map((it) => (
         <button
