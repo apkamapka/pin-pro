@@ -5,7 +5,7 @@ export type Lang = "pl" | "en";
 
 const dict = {
   pl: {
-    appName: "SerwisMap",
+    appName: "Mapelo",
     map: "Mapa",
     customers: "Klienci",
     today: "Dziś",
@@ -398,7 +398,7 @@ const dict = {
       n === 1 ? "i 1 więcej" : `i ${n} więcej`,
   },
   en: {
-    appName: "SerwisMap",
+    appName: "Mapelo",
     map: "Map",
     customers: "Customers",
     today: "Today",
