@@ -4,7 +4,7 @@
 @tailwind components;
 @tailwind utilities;
 
-/* SerwisMap design system — semantic tokens, HSL only */
+/* Mapelo design system — semantic tokens, HSL only */
 
 @layer base {
   :root {
