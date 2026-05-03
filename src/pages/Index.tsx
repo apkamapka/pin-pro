@@ -113,7 +113,7 @@ const Index = () => {
 
   return (
     <div className="flex h-[100dvh] flex-col bg-background">
-      <title>SerwisMap — mapa klientów dla mobilnych specjalistów</title>
+      <title>Mapelo — mapa klientów dla mobilnych specjalistów</title>
       <meta
         name="description"
         content="Uniwersalna mapa klientów z kolorowymi pinami opartymi o terminy wizyt. Działa offline, dane lokalne."
