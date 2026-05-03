@@ -22,8 +22,8 @@ export default defineConfig({
         "robots.txt",
       ],
       manifest: {
-        name: "SerwisMap — mapa klientów",
-        short_name: "SerwisMap",
+        name: "Mapelo — mapa klientów",
+        short_name: "Mapelo",
         description:
           "Mapa klientów z kolorowymi pinami opartymi o terminy wizyt. Działa offline, dane lokalne.",
         theme_color: "#2563eb",
