@@ -241,7 +241,10 @@ export function Settings() {
       </section>
 
       <section className="space-y-1 border-t pt-4 text-center text-xs text-muted-foreground">
-        <div className="font-semibold text-foreground">SerwisMap</div>
+        <div className="font-semibold">
+          <span className="text-foreground">Map</span>
+          <span className="text-status-ok">elo</span>
+        </div>
         <div>{t.aboutText}</div>
         <div>
           {t.version} {APP_VERSION}
