@@ -44,7 +44,7 @@ export function Settings() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `serwismap-backup-${format(new Date(), "yyyy-MM-dd")}.json`;
+    a.download = `mapelo-backup-${format(new Date(), "yyyy-MM-dd")}.json`;
     document.body.appendChild(a);
     a.click();
     a.remove();
