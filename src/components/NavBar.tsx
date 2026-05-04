@@ -6,7 +6,7 @@ import {
   Users,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useT } from "@/lib/i18n";
+import { useT, useI18n, type Lang } from "@/lib/i18n";
 
 export type Tab = "map" | "customers" | "today" | "nearby" | "settings";
 
@@ -18,12 +18,20 @@ interface Props {
 
 export function NavBar({ active, onChange, variant }: Props) {
   const t = useT();
+  const lang = useI18n((s) => s.lang);
+  const setLang = useI18n((s) => s.setLang);
+
   const items: Array<{ key: Tab; label: string; icon: JSX.Element }> = [
     { key: "map", label: t.map, icon: <Map className="h-5 w-5" /> },
     { key: "customers", label: t.customers, icon: <Users className="h-5 w-5" /> },
     { key: "today", label: t.today, icon: <CalendarClock className="h-5 w-5" /> },
     { key: "nearby", label: t.nearby, icon: <Compass className="h-5 w-5" /> },
     { key: "settings", label: t.settings, icon: <SettingsIcon className="h-5 w-5" /> },
+  ];
+
+  const langOptions: Array<{ code: Lang; label: string }> = [
+    { code: "pl", label: "PL" },
+    { code: "en", label: "EN" },
   ];
 
   if (variant === "bottom") {
@@ -84,6 +92,28 @@ export function NavBar({ active, onChange, variant }: Props) {
           <span>{it.label}</span>
         </button>
       ))}
+      <div
+        className="ml-auto flex items-center gap-0.5 rounded-lg border bg-background p-0.5"
+        role="group"
+        aria-label={t.language}
+      >
+        {langOptions.map((opt) => (
+          <button
+            key={opt.code}
+            type="button"
+            aria-pressed={lang === opt.code}
+            onClick={() => setLang(opt.code)}
+            className={cn(
+              "rounded-md px-2.5 py-1 text-xs font-semibold transition-colors",
+              lang === opt.code
+                ? "bg-primary text-primary-foreground"
+                : "text-muted-foreground hover:bg-accent hover:text-foreground",
+            )}
+          >
+            {opt.label}
+          </button>
+        ))}
+      </div>
     </nav>
   );
 }
