@@ -34,30 +34,61 @@ export function NavBar({ active, onChange, variant }: Props) {
     { code: "en", label: "EN" },
   ];
 
+  const langSwitcher = (
+    <div
+      className="flex items-center gap-0.5 rounded-lg border bg-background p-0.5"
+      role="group"
+      aria-label={t.language}
+    >
+      {langOptions.map((opt) => (
+        <button
+          key={opt.code}
+          type="button"
+          aria-pressed={lang === opt.code}
+          onClick={() => setLang(opt.code)}
+          className={cn(
+            "rounded-md px-2.5 py-1 text-xs font-semibold transition-colors",
+            lang === opt.code
+              ? "bg-primary text-primary-foreground"
+              : "text-muted-foreground hover:bg-accent hover:text-foreground",
+          )}
+        >
+          {opt.label}
+        </button>
+      ))}
+    </div>
+  );
+
   if (variant === "bottom") {
     return (
-      <nav
-        className="fixed inset-x-0 bottom-0 z-[500] grid grid-cols-5 border-t bg-background/95 backdrop-blur pb-[env(safe-area-inset-bottom)] shadow-floating"
-        role="tablist"
-      >
-        {items.map((it) => (
-          <button
-            key={it.key}
-            role="tab"
-            aria-selected={active === it.key}
-            onClick={() => onChange(it.key)}
-            className={cn(
-              "flex min-h-[60px] flex-col items-center justify-center gap-0.5 px-1 py-2 text-[10px] font-medium transition-colors",
-              active === it.key
-                ? "text-primary"
-                : "text-muted-foreground hover:text-foreground",
-            )}
-          >
-            {it.icon}
-            <span className="max-w-full truncate">{it.label}</span>
-          </button>
-        ))}
-      </nav>
+      <>
+        {/* Pływający przełącznik języka — tylko mobile, top-right nad mapą */}
+        <div className="fixed right-3 top-3 z-[600] shadow-floating">
+          {langSwitcher}
+        </div>
+        <nav
+          className="fixed inset-x-0 bottom-0 z-[500] grid grid-cols-5 border-t bg-background/95 backdrop-blur pb-[env(safe-area-inset-bottom)] shadow-floating"
+          role="tablist"
+        >
+          {items.map((it) => (
+            <button
+              key={it.key}
+              role="tab"
+              aria-selected={active === it.key}
+              onClick={() => onChange(it.key)}
+              className={cn(
+                "flex min-h-[60px] flex-col items-center justify-center gap-0.5 px-1 py-2 text-[10px] font-medium transition-colors",
+                active === it.key
+                  ? "text-primary"
+                  : "text-muted-foreground hover:text-foreground",
+              )}
+            >
+              {it.icon}
+              <span className="max-w-full truncate">{it.label}</span>
+            </button>
+          ))}
+        </nav>
+      </>
     );
   }
 
@@ -92,28 +123,7 @@ export function NavBar({ active, onChange, variant }: Props) {
           <span>{it.label}</span>
         </button>
       ))}
-      <div
-        className="ml-auto flex items-center gap-0.5 rounded-lg border bg-background p-0.5"
-        role="group"
-        aria-label={t.language}
-      >
-        {langOptions.map((opt) => (
-          <button
-            key={opt.code}
-            type="button"
-            aria-pressed={lang === opt.code}
-            onClick={() => setLang(opt.code)}
-            className={cn(
-              "rounded-md px-2.5 py-1 text-xs font-semibold transition-colors",
-              lang === opt.code
-                ? "bg-primary text-primary-foreground"
-                : "text-muted-foreground hover:bg-accent hover:text-foreground",
-            )}
-          >
-            {opt.label}
-          </button>
-        ))}
-      </div>
+      <div className="ml-auto">{langSwitcher}</div>
     </nav>
   );
 }
