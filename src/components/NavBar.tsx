@@ -30,8 +30,8 @@ export function NavBar({ active, onChange, variant }: Props) {
   ];
 
   const langOptions: Array<{ code: Lang; label: string }> = [
-    { code: "pl", label: "PL" },
     { code: "en", label: "EN" },
+    { code: "pl", label: "PL" },
   ];
 
   const langSwitcher = (
