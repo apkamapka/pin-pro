@@ -182,16 +182,16 @@ export function Settings() {
         <Label>{t.language}</Label>
         <div className="grid grid-cols-2 gap-2">
           <Button
-            variant={lang === "pl" ? "default" : "outline"}
-            onClick={() => setLang("pl")}
-          >
-            {t.polish}
-          </Button>
-          <Button
             variant={lang === "en" ? "default" : "outline"}
             onClick={() => setLang("en")}
           >
             {t.english}
+          </Button>
+          <Button
+            variant={lang === "pl" ? "default" : "outline"}
+            onClick={() => setLang("pl")}
+          >
+            {t.polish}
           </Button>
         </div>
       </section>
