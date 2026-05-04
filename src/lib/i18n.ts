@@ -788,7 +788,7 @@ interface I18nState {
 export const useI18n = create<I18nState>()(
   persist(
     (set) => ({
-      lang: "pl",
+      lang: "en",
       setLang: (lang) => set({ lang }),
     }),
     { name: "serwismap-lang" },
