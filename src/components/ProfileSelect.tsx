@@ -7,45 +7,17 @@ import type { Profile } from "@/store/profiles";
 import { useT } from "@/lib/i18n";
 import { compressImage } from "@/lib/mediaUtils";
 
-/** Inline Mapelo pin logo (from icon-source.svg) */
-function MapeloLogo({ size = 80 }: { size?: number }) {
+/** Mapelo logo from uploaded brand asset */
+function MapeloLogo({ size = 100 }: { size?: number }) {
   return (
-    <svg
+    <img
+      src="/mapelo-logo.png"
+      alt="Mapelo"
       width={size}
       height={size}
-      viewBox="0 0 512 512"
-      xmlns="http://www.w3.org/2000/svg"
       className="drop-shadow-lg"
-    >
-      <defs>
-        <linearGradient id="psel-bg" x1="0%" y1="0%" x2="0%" y2="100%">
-          <stop offset="0%" stopColor="#3b82f6" />
-          <stop offset="100%" stopColor="#1d4ed8" />
-        </linearGradient>
-        <linearGradient id="psel-pin" x1="0%" y1="0%" x2="0%" y2="100%">
-          <stop offset="0%" stopColor="#fef2f2" />
-          <stop offset="50%" stopColor="#ef4444" />
-          <stop offset="100%" stopColor="#b91c1c" />
-        </linearGradient>
-      </defs>
-      <rect width="512" height="512" rx="96" fill="url(#psel-bg)" />
-      <g opacity="0.18" stroke="#ffffff" strokeWidth="1.5" fill="none">
-        <path d="M 60 140 Q 200 110 350 160 T 460 200" />
-        <path d="M 50 240 Q 180 220 320 260 T 470 290" />
-        <path d="M 70 360 Q 200 340 340 380 T 470 410" />
-        <path d="M 130 60 Q 150 200 140 350 T 160 460" />
-        <path d="M 280 50 Q 300 200 290 360 T 310 470" />
-        <path d="M 420 70 Q 440 200 430 360 T 440 460" />
-      </g>
-      <path
-        d="M 256 96 C 184 96 130 150 130 222 C 130 304 256 432 256 432 C 256 432 382 304 382 222 C 382 150 328 96 256 96 Z"
-        fill="url(#psel-pin)"
-        stroke="#ffffff"
-        strokeWidth="6"
-      />
-      <circle cx="256" cy="222" r="48" fill="#ffffff" />
-      <circle cx="256" cy="222" r="32" fill="#dc2626" />
-    </svg>
+      style={{ objectFit: "contain" }}
+    />
   );
 }
 
@@ -183,7 +155,7 @@ export function ProfileSelect() {
       />
 
       {/* Mapelo Logo */}
-      <MapeloLogo size={80} />
+      <MapeloLogo size={100} />
       <h1 className="mt-2 mb-1 text-xl font-bold text-foreground">
         <span>Map</span>
         <span className="text-green-500">elo</span>
@@ -320,7 +292,7 @@ export function ProfileSelect() {
       </div>
 
       {/* Footer — "stworzone przez akApp" */}
-      <div className="mt-auto pt-10 flex flex-col items-center gap-2 text-xs text-muted-foreground">
+      <div className="mt-auto pt-10 pb-6 flex flex-col items-center gap-3 text-xs text-muted-foreground">
         <span>{t.madeBy}</span>
         <a
           href="https://akappstudio.pl/"
