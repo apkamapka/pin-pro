@@ -63,7 +63,7 @@ export function NavBar({ active, onChange, variant }: Props) {
     return (
       <>
         {/* Pływający przełącznik języka — tylko mobile, top-right nad mapą */}
-        <div className="fixed right-3 top-3 z-[600] shadow-floating">
+        <div className="fixed right-3 z-[600] shadow-floating" style={{ top: "max(0.75rem, env(safe-area-inset-top, 0.75rem))" }}>
           {langSwitcher}
         </div>
         <nav

@@ -91,7 +91,7 @@ export function Settings() {
   };
 
   return (
-    <div className="space-y-6 p-4 pt-6 max-w-2xl mx-auto">
+    <div className="space-y-6 p-4 pt-6 pb-8 max-w-2xl mx-auto">
       <section className="space-y-3">
         <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
           {t.exportData} / {t.importData}
@@ -258,12 +258,20 @@ export function Settings() {
             {t.profileSection}
           </h2>
           <div className="flex items-center gap-3">
-            <div
-              className="flex h-10 w-10 items-center justify-center rounded-full text-sm font-bold text-white"
-              style={{ backgroundColor: activeProfile.color }}
-            >
-              {activeProfile.name.charAt(0).toUpperCase()}
-            </div>
+            {activeProfile.logo ? (
+              <img
+                src={activeProfile.logo}
+                alt={activeProfile.name}
+                className="h-10 w-10 shrink-0 rounded-full object-cover"
+              />
+            ) : (
+              <div
+                className="flex h-10 w-10 items-center justify-center rounded-full text-sm font-bold text-white"
+                style={{ backgroundColor: activeProfile.color }}
+              >
+                {activeProfile.name.charAt(0).toUpperCase()}
+              </div>
+            )}
             <span className="font-medium">{activeProfile.name}</span>
           </div>
           <Button variant="outline" onClick={handleSwitchProfile} className="w-full">

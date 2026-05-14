@@ -130,7 +130,7 @@ const Index = () => {
       {!isMobile && <NavBar active={tab} onChange={setTab} variant="top" />}
 
       <main
-        className={`flex-1 overflow-hidden ${tab === "map" ? "" : "overflow-y-auto"} ${isMobile ? "pb-[64px]" : ""}`}
+        className={`flex-1 overflow-hidden ${tab === "map" ? "" : "overflow-y-auto"} ${isMobile ? "pb-[80px]" : ""}`}
       >
         {tab === "map" && (
           <div className="relative h-full w-full">

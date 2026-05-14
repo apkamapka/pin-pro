@@ -7,6 +7,8 @@ export interface Profile {
   name: string;
   color: string;
   createdAt: string;
+  /** Base64 data-url for custom avatar/logo (optional). */
+  logo?: string;
 }
 
 const AVATAR_COLORS = [
@@ -29,6 +31,7 @@ interface ProfilesState {
   activeProfileId: string | null;
 
   addProfile: (name: string) => Profile;
+  updateProfile: (id: string, patch: Partial<Pick<Profile, "name" | "logo">>) => void;
   removeProfile: (id: string) => void;
   setActiveProfile: (id: string | null) => void;
 }
@@ -48,6 +51,14 @@ export const useProfiles = create<ProfilesState>()(
         };
         set({ profiles: [...get().profiles, profile] });
         return profile;
+      },
+
+      updateProfile: (id: string, patch: Partial<Pick<Profile, "name" | "logo">>) => {
+        set({
+          profiles: get().profiles.map((p) =>
+            p.id === id ? { ...p, ...patch } : p,
+          ),
+        });
       },
 
       removeProfile: (id: string) => {
