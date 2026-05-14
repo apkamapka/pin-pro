@@ -19,6 +19,7 @@ export async function initNativePlugins(): Promise<void> {
     const { StatusBar, Style } = await import('@capacitor/status-bar');
     await StatusBar.setStyle({ style: Style.Light });
     await StatusBar.setBackgroundColor({ color: '#2563eb' });
+    await StatusBar.setOverlaysWebView({ overlay: false });
   } catch {
     /* web fallback – ignore */
   }

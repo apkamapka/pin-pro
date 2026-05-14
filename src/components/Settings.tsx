@@ -91,7 +91,7 @@ export function Settings() {
   };
 
   return (
-    <div className="space-y-6 p-4 max-w-2xl mx-auto">
+    <div className="space-y-6 p-4 pt-6 max-w-2xl mx-auto">
       <section className="space-y-3">
         <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
           {t.exportData} / {t.importData}
@@ -279,7 +279,7 @@ export function Settings() {
         </h2>
         <div className="flex flex-col gap-1">
           <a
-            href="https://mapelo.app/privacy"
+            href="https://akappstudio.pl/Mapelo/polityka-prywatnosci/"
             target="_blank"
             rel="noopener noreferrer"
             className="text-sm text-primary hover:underline"
@@ -287,7 +287,7 @@ export function Settings() {
             {t.privacyPolicy}
           </a>
           <a
-            href="https://mapelo.app/terms"
+            href="https://akappstudio.pl/Mapelo/regulamin/"
             target="_blank"
             rel="noopener noreferrer"
             className="text-sm text-primary hover:underline"
@@ -301,6 +301,17 @@ export function Settings() {
         <div className="font-semibold">
           <span className="text-foreground">Map</span>
           <span className="text-status-ok">elo</span>
+          <span className="ml-1 font-normal">
+            {t.createdBy}{" "}
+            <a
+              href="https://akappstudio.pl/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-primary hover:underline"
+            >
+              akApp
+            </a>
+          </span>
         </div>
         <div>{t.aboutText}</div>
         <div>
