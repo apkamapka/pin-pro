@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { v4 as uuidv4 } from "uuid";
+import { getActiveStorageKey } from "@/store/profiles";
 import type {
   Category,
   ColorThresholds,
@@ -369,7 +370,7 @@ export const useCustomers = create<CustomersState>()(
       },
     }),
     {
-      name: "serwismap-data",
+      name: getActiveStorageKey(),
       version: 6,
       migrate: (persisted: unknown, fromVersion: number) => {
         const state = (persisted ?? {}) as Record<string, unknown>;

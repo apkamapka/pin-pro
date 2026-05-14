@@ -6,6 +6,7 @@ import { Slider } from "@/components/ui/slider";
 import { CategoryManager } from "@/components/CategoryManager";
 import { ImportWizard } from "@/components/ImportWizard";
 import { useCustomers } from "@/store/customers";
+import { useProfiles } from "@/store/profiles";
 import { COUNTRIES, COUNTRY_AUTO } from "@/lib/countries";
 import { useT, useI18n } from "@/lib/i18n";
 import { format } from "date-fns";
@@ -35,6 +36,16 @@ export function Settings() {
   const setNearbyRadiusKm = useCustomers((s) => s.setNearbyRadiusKm);
   const fileRef = useRef<HTMLInputElement>(null);
   const [wizardOpen, setWizardOpen] = useState(false);
+
+  const activeProfileId = useProfiles((s) => s.activeProfileId);
+  const profiles = useProfiles((s) => s.profiles);
+  const setActiveProfile = useProfiles((s) => s.setActiveProfile);
+  const activeProfile = profiles.find((p) => p.id === activeProfileId);
+
+  const handleSwitchProfile = () => {
+    setActiveProfile(null);
+    window.location.reload();
+  };
 
   const handleExport = () => {
     const data = exportCustomers();
@@ -238,6 +249,52 @@ export function Settings() {
           <Trash2 className="mr-2 h-4 w-4" />
           {t.clearAll}
         </Button>
+      </section>
+
+      {/* Profile */}
+      {activeProfile && (
+        <section className="space-y-3 rounded-xl border p-4">
+          <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+            {t.profileSection}
+          </h2>
+          <div className="flex items-center gap-3">
+            <div
+              className="flex h-10 w-10 items-center justify-center rounded-full text-sm font-bold text-white"
+              style={{ backgroundColor: activeProfile.color }}
+            >
+              {activeProfile.name.charAt(0).toUpperCase()}
+            </div>
+            <span className="font-medium">{activeProfile.name}</span>
+          </div>
+          <Button variant="outline" onClick={handleSwitchProfile} className="w-full">
+            {t.profileSwitch}
+          </Button>
+        </section>
+      )}
+
+      {/* Legal links */}
+      <section className="space-y-2">
+        <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+          {t.legal}
+        </h2>
+        <div className="flex flex-col gap-1">
+          <a
+            href="https://mapelo.app/privacy"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-sm text-primary hover:underline"
+          >
+            {t.privacyPolicy}
+          </a>
+          <a
+            href="https://mapelo.app/terms"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-sm text-primary hover:underline"
+          >
+            {t.termsOfService}
+          </a>
+        </div>
       </section>
 
       <section className="space-y-1 border-t pt-4 text-center text-xs text-muted-foreground">

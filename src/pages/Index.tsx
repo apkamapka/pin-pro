@@ -16,6 +16,8 @@ import { Settings } from "@/components/Settings";
 import { CustomerForm } from "@/components/CustomerForm";
 import { CustomerDetail } from "@/components/CustomerDetail";
 import { useCustomers } from "@/store/customers";
+import { useProfiles } from "@/store/profiles";
+import { ProfileSelect } from "@/components/ProfileSelect";
 import { useT } from "@/lib/i18n";
 import { useThemeEffect } from "@/hooks/useTheme";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -31,11 +33,17 @@ const Index = () => {
   const t = useT();
   useThemeEffect();
   const isMobile = useIsMobile();
+  const activeProfileId = useProfiles((s) => s.activeProfileId);
   const customers = useCustomers((s) => s.customers);
 
   const [tab, setTab] = useState<Tab>("map");
   const [sheet, setSheet] = useState<SheetMode>({ kind: "none" });
   const [focusedId, setFocusedId] = useState<string | null>(null);
+
+  // Show profile selection screen if no active profile
+  if (!activeProfileId) {
+    return <ProfileSelect />;
+  }
 
   // Keep detail sheet in sync with latest customer data; close if customer is deleted
   useEffect(() => {

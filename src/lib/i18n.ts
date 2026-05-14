@@ -185,6 +185,20 @@ const dict = {
     version: "Wersja",
     aboutText:
       "Uniwersalna mapa klientów dla mobilnych specjalistów. Dane przechowywane lokalnie w przeglądarce.",
+    // Profiles
+    profileChoose: "Wybierz Profil",
+    profileAdd: "Dodaj Profil",
+    profileCreate: "Utwórz",
+    profileDelete: "Usuń profil",
+    profileDeleteConfirm: "Czy na pewno chcesz usunąć profil",
+    profileNamePlaceholder: "Imię lub nazwa profilu",
+    profileSwitch: "Zmień profil",
+    profileSection: "Profil",
+    // Legal
+    legal: "Informacje prawne",
+    privacyPolicy: "Polityka prywatności",
+    termsOfService: "Regulamin",
+    cancel: "Anuluj",
     geocoding: "Wyszukiwanie adresu…",
     geocodeFail: "Nie znaleziono adresu. Spróbuj inaczej.",
     saved: "Zapisano",
@@ -570,6 +584,20 @@ const dict = {
     version: "Version",
     aboutText:
       "Universal customer map for mobile professionals. Data stored locally in your browser.",
+    // Profiles
+    profileChoose: "Choose Profile",
+    profileAdd: "Add Profile",
+    profileCreate: "Create",
+    profileDelete: "Delete profile",
+    profileDeleteConfirm: "Are you sure you want to delete profile",
+    profileNamePlaceholder: "Name or profile label",
+    profileSwitch: "Switch profile",
+    profileSection: "Profile",
+    // Legal
+    legal: "Legal",
+    privacyPolicy: "Privacy Policy",
+    termsOfService: "Terms of Service",
+    cancel: "Cancel",
     geocoding: "Looking up address…",
     geocodeFail: "Address not found. Try a different format.",
     saved: "Saved",
