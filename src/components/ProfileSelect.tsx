@@ -292,15 +292,19 @@ export function ProfileSelect() {
       </div>
 
       {/* Footer — "stworzone przez akApp" */}
-      <div className="mt-auto pt-10 pb-6 flex flex-col items-center gap-3 text-xs text-muted-foreground">
+      <div className="mt-auto pt-10 pb-8 flex flex-col items-center gap-2 text-xs text-muted-foreground">
         <span>{t.madeBy}</span>
         <a
           href="https://akappstudio.pl/"
           target="_blank"
           rel="noopener noreferrer"
-          className="text-sm font-semibold text-foreground transition-opacity hover:opacity-80"
+          className="transition-opacity hover:opacity-80"
         >
-          akApp
+          <img
+            src="/akapp-logo.svg"
+            alt="akApp"
+            className="h-10 w-10"
+          />
         </a>
       </div>
     </div>
