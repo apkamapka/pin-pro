@@ -15,8 +15,8 @@ function MapeloLogo({ size = 100 }: { size?: number }) {
       alt="Mapelo"
       width={size}
       height={size}
-      className="drop-shadow-lg"
-      style={{ objectFit: "contain" }}
+      className="rounded-full shadow-lg"
+      style={{ objectFit: "cover" }}
     />
   );
 }
@@ -303,7 +303,7 @@ export function ProfileSelect() {
           <img
             src="/akapp-logo.svg"
             alt="akApp"
-            className="h-10 w-10"
+            className="h-10 w-10 rounded-lg bg-white p-1 shadow-sm"
           />
         </a>
       </div>
