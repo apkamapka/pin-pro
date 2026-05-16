@@ -8,7 +8,7 @@ import { useT } from "@/lib/i18n";
 import { compressImage } from "@/lib/mediaUtils";
 
 /** Mapelo logo from uploaded brand asset */
-function MapeloLogo({ size = 100 }: { size?: number }) {
+function MapeloLogo({ size = 120 }: { size?: number }) {
   return (
     <img
       src="/mapelo-logo.png"
@@ -301,9 +301,9 @@ export function ProfileSelect() {
           className="transition-opacity hover:opacity-80"
         >
           <img
-            src="/akapp-logo.svg"
+            src="/akapp-logo.png"
             alt="akApp"
-            className="h-10 w-10 rounded-lg bg-white p-1 shadow-sm"
+            className="h-12 w-12 rounded-full shadow-sm"
           />
         </a>
       </div>
