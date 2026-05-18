@@ -8,16 +8,20 @@ import { useT } from "@/lib/i18n";
 import { compressImage } from "@/lib/mediaUtils";
 
 /** Mapelo logo from uploaded brand asset */
-function MapeloLogo({ size = 100 }: { size?: number }) {
+function MapeloLogo({ size = 120 }: { size?: number }) {
   return (
-    <img
-      src="/mapelo-logo.png"
-      alt="Mapelo"
-      width={size}
-      height={size}
-      className="drop-shadow-lg"
-      style={{ objectFit: "contain" }}
-    />
+    <div
+      className="rounded-full overflow-hidden bg-white shadow-lg"
+      style={{ width: size, height: size }}
+    >
+      <img
+        src="/mapelo-logo.svg"
+        alt="Mapelo"
+        width={size}
+        height={size}
+        style={{ objectFit: "cover", display: "block" }}
+      />
+    </div>
   );
 }
 
@@ -300,11 +304,13 @@ export function ProfileSelect() {
           rel="noopener noreferrer"
           className="transition-opacity hover:opacity-80"
         >
-          <img
-            src="/akapp-logo.svg"
-            alt="akApp"
-            className="h-10 w-10"
-          />
+          <div className="h-12 w-12 rounded-full overflow-hidden bg-white shadow-sm">
+            <img
+              src="/akapp-logo.svg"
+              alt="akApp"
+              className="h-full w-full object-cover block"
+            />
+          </div>
         </a>
       </div>
     </div>

@@ -186,6 +186,11 @@
   color: hsl(var(--foreground)) !important;
 }
 
+/* Push Leaflet zoom controls below Android status bar */
+.leaflet-top {
+  top: calc(env(safe-area-inset-top, 2rem) + 0.25rem) !important;
+}
+
 /* Capacitor native safe area insets */
 html {
   padding-top: env(safe-area-inset-top, 0px);

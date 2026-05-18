@@ -1,0 +1,46 @@
+From fe03ffaea9bae52b4508aa6ee5792c16c4c69698 Mon Sep 17 00:00:00 2001
+From: Claude <claude@anthropic.com>
+Date: Fri, 15 May 2026 21:24:50 +0000
+Subject: [PATCH] fix: Mapelo logo in white circle frame
+
+- Simple rounded-full with bg-white, border, overflow-hidden
+- Image clipped to circle naturally
+---
+ src/components/ProfileSelect.tsx | 14 +++++---------
+ 1 file changed, 5 insertions(+), 9 deletions(-)
+
+diff --git a/src/components/ProfileSelect.tsx b/src/components/ProfileSelect.tsx
+index 81ae01e..97c6709 100644
+--- a/src/components/ProfileSelect.tsx
++++ b/src/components/ProfileSelect.tsx
+@@ -7,22 +7,18 @@ import type { Profile } from "@/store/profiles";
+ import { useT } from "@/lib/i18n";
+ import { compressImage } from "@/lib/mediaUtils";
+ 
+-/** Mapelo logo in a dark circular frame (like Docelo style) */
++/** Mapelo logo in a circular frame with white background */
+ function MapeloLogo({ size = 120 }: { size?: number }) {
+   return (
+     <div
+-      className="rounded-full border-2 border-slate-600 shadow-xl flex items-center justify-center"
+-      style={{
+-        width: size,
+-        height: size,
+-        background: "linear-gradient(145deg, #1e293b, #0f172a)",
+-      }}
++      className="rounded-full border-2 border-slate-600 bg-white shadow-xl overflow-hidden flex items-center justify-center"
++      style={{ width: size, height: size }}
+     >
+       <img
+         src="/mapelo-logo.png"
+         alt="Mapelo"
+-        width={size * 0.65}
+-        height={size * 0.65}
++        width={size * 0.75}
++        height={size * 0.75}
+         className="object-contain"
+       />
+     </div>
+-- 
+2.43.0
+

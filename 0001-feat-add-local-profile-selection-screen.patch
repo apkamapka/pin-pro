@@ -1,0 +1,442 @@
+From da3a19d89830fb306f383d8e14316e934af7b5b3 Mon Sep 17 00:00:00 2001
+From: Mapelo <mapelo@mapelo.app>
+Date: Thu, 14 May 2026 10:37:25 +0000
+Subject: [PATCH] feat: add local profile selection screen
+
+- Profile selection screen on app start (choose/create/delete profiles)
+- Each profile stores its own customer data in separate localStorage key
+- Profile switch in Settings
+- Legal links (Privacy Policy, Terms of Service) in Settings
+- i18n strings for PL/EN
+- All 269 tests pass
+---
+ src/components/ProfileSelect.tsx | 126 +++++++++++++++++++++++++++++++
+ src/components/Settings.tsx      |  57 ++++++++++++++
+ src/lib/i18n.ts                  |  28 +++++++
+ src/pages/Index.tsx              |   8 ++
+ src/store/customers.ts           |   3 +-
+ src/store/profiles.ts            |  98 ++++++++++++++++++++++++
+ 6 files changed, 319 insertions(+), 1 deletion(-)
+ create mode 100644 src/components/ProfileSelect.tsx
+ create mode 100644 src/store/profiles.ts
+
+diff --git a/src/components/ProfileSelect.tsx b/src/components/ProfileSelect.tsx
+new file mode 100644
+index 0000000..8050d7a
+--- /dev/null
++++ b/src/components/ProfileSelect.tsx
+@@ -0,0 +1,126 @@
++import { useState } from "react";
++import { format } from "date-fns";
++import { Plus, Trash2, ChevronRight } from "lucide-react";
++import { Button } from "@/components/ui/button";
++import { useProfiles } from "@/store/profiles";
++import type { Profile } from "@/store/profiles";
++import { useT } from "@/lib/i18n";
++
++export function ProfileSelect() {
++  const t = useT();
++  const profiles = useProfiles((s) => s.profiles);
++  const addProfile = useProfiles((s) => s.addProfile);
++  const removeProfile = useProfiles((s) => s.removeProfile);
++  const setActiveProfile = useProfiles((s) => s.setActiveProfile);
++
++  const [adding, setAdding] = useState(false);
++  const [newName, setNewName] = useState("");
++
++  const handleSelect = (profile: Profile) => {
++    setActiveProfile(profile.id);
++    // Reload so the customers store picks up the new storage key
++    window.location.reload();
++  };
++
++  const handleAdd = () => {
++    const trimmed = newName.trim();
++    if (!trimmed) return;
++    const profile = addProfile(trimmed);
++    setNewName("");
++    setAdding(false);
++    // Auto-select the new profile
++    setActiveProfile(profile.id);
++    window.location.reload();
++  };
++
++  const handleRemove = (e: React.MouseEvent, profile: Profile) => {
++    e.stopPropagation();
++    if (!window.confirm(`${t.profileDeleteConfirm} "${profile.name}"?`)) return;
++    removeProfile(profile.id);
++  };
++
++  return (
++    <div className="flex min-h-[100dvh] flex-col items-center bg-gradient-to-b from-blue-50 to-white px-4 pt-12 pb-8 dark:from-slate-900 dark:to-slate-950">
++      {/* Logo */}
++      <div className="mb-2 flex h-20 w-20 items-center justify-center rounded-full bg-primary shadow-lg">
++        <span className="text-3xl font-bold text-primary-foreground">M</span>
++      </div>
++      <h1 className="mb-1 text-xl font-bold text-foreground">
++        <span>Map</span>
++        <span className="text-green-500">elo</span>
++      </h1>
++      <p className="mb-8 text-sm text-muted-foreground">{t.profileChoose}</p>
++
++      {/* Profile list */}
++      <div className="w-full max-w-sm space-y-3">
++        {profiles.map((profile) => (
++          <button
++            key={profile.id}
++            onClick={() => handleSelect(profile)}
++            className="flex w-full items-center gap-3 rounded-xl border bg-card p-4 shadow-sm transition-colors hover:bg-accent"
++          >
++            <div
++              className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full text-lg font-bold text-white shadow-sm"
++              style={{ backgroundColor: profile.color }}
++            >
++              {profile.name.charAt(0).toUpperCase()}
++            </div>
++            <div className="min-w-0 flex-1 text-left">
++              <div className="truncate font-semibold text-card-foreground">
++                {profile.name}
++              </div>
++              <div className="text-xs text-muted-foreground">
++                {format(new Date(profile.createdAt), "dd.MM.yyyy")}
++              </div>
++            </div>
++            <div className="flex items-center gap-1">
++              <button
++                onClick={(e) => handleRemove(e, profile)}
++                className="rounded-lg p-2 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
++                title={t.profileDelete}
++              >
++                <Trash2 className="h-4 w-4" />
++              </button>
++              <ChevronRight className="h-5 w-5 text-muted-foreground" />
++            </div>
++          </button>
++        ))}
++
++        {/* Add profile form */}
++        {adding ? (
++          <div className="rounded-xl border bg-card p-4 shadow-sm">
++            <input
++              autoFocus
++              value={newName}
++              onChange={(e) => setNewName(e.target.value)}
++              onKeyDown={(e) => e.key === "Enter" && handleAdd()}
++              placeholder={t.profileNamePlaceholder}
++              className="mb-3 w-full rounded-lg border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary"
++              maxLength={30}
++            />
++            <div className="flex gap-2">
++              <Button onClick={handleAdd} className="flex-1" disabled={!newName.trim()}>
++                {t.profileCreate}
++              </Button>
++              <Button
++                variant="outline"
++                onClick={() => { setAdding(false); setNewName(""); }}
++              >
++                {t.cancel}
++              </Button>
++            </div>
++          </div>
++        ) : (
++          <Button
++            onClick={() => setAdding(true)}
++            className="w-full bg-green-500 hover:bg-green-600 text-white"
++            size="lg"
++          >
++            <Plus className="mr-2 h-5 w-5" />
++            {t.profileAdd}
++          </Button>
++        )}
++      </div>
++    </div>
++  );
++}
+diff --git a/src/components/Settings.tsx b/src/components/Settings.tsx
+index b0de007..2ecacc5 100644
+--- a/src/components/Settings.tsx
++++ b/src/components/Settings.tsx
+@@ -6,6 +6,7 @@ import { Slider } from "@/components/ui/slider";
+ import { CategoryManager } from "@/components/CategoryManager";
+ import { ImportWizard } from "@/components/ImportWizard";
+ import { useCustomers } from "@/store/customers";
++import { useProfiles } from "@/store/profiles";
+ import { COUNTRIES, COUNTRY_AUTO } from "@/lib/countries";
+ import { useT, useI18n } from "@/lib/i18n";
+ import { format } from "date-fns";
+@@ -36,6 +37,16 @@ export function Settings() {
+   const fileRef = useRef<HTMLInputElement>(null);
+   const [wizardOpen, setWizardOpen] = useState(false);
+ 
++  const activeProfileId = useProfiles((s) => s.activeProfileId);
++  const profiles = useProfiles((s) => s.profiles);
++  const setActiveProfile = useProfiles((s) => s.setActiveProfile);
++  const activeProfile = profiles.find((p) => p.id === activeProfileId);
++
++  const handleSwitchProfile = () => {
++    setActiveProfile(null);
++    window.location.reload();
++  };
++
+   const handleExport = () => {
+     const data = exportCustomers();
+     const blob = new Blob([JSON.stringify(data, null, 2)], {
+@@ -240,6 +251,52 @@ export function Settings() {
+         </Button>
+       </section>
+ 
++      {/* Profile */}
++      {activeProfile && (
++        <section className="space-y-3 rounded-xl border p-4">
++          <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
++            {t.profileSection}
++          </h2>
++          <div className="flex items-center gap-3">
++            <div
++              className="flex h-10 w-10 items-center justify-center rounded-full text-sm font-bold text-white"
++              style={{ backgroundColor: activeProfile.color }}
++            >
++              {activeProfile.name.charAt(0).toUpperCase()}
++            </div>
++            <span className="font-medium">{activeProfile.name}</span>
++          </div>
++          <Button variant="outline" onClick={handleSwitchProfile} className="w-full">
++            {t.profileSwitch}
++          </Button>
++        </section>
++      )}
++
++      {/* Legal links */}
++      <section className="space-y-2">
++        <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
++          {t.legal}
++        </h2>
++        <div className="flex flex-col gap-1">
++          <a
++            href="https://mapelo.app/privacy"
++            target="_blank"
++            rel="noopener noreferrer"
++            className="text-sm text-primary hover:underline"
++          >
++            {t.privacyPolicy}
++          </a>
++          <a
++            href="https://mapelo.app/terms"
++            target="_blank"
++            rel="noopener noreferrer"
++            className="text-sm text-primary hover:underline"
++          >
++            {t.termsOfService}
++          </a>
++        </div>
++      </section>
++
+       <section className="space-y-1 border-t pt-4 text-center text-xs text-muted-foreground">
+         <div className="font-semibold">
+           <span className="text-foreground">Map</span>
+diff --git a/src/lib/i18n.ts b/src/lib/i18n.ts
+index 0cdb0cd..4fc3fe8 100644
+--- a/src/lib/i18n.ts
++++ b/src/lib/i18n.ts
+@@ -185,6 +185,20 @@ const dict = {
+     version: "Wersja",
+     aboutText:
+       "Uniwersalna mapa klientów dla mobilnych specjalistów. Dane przechowywane lokalnie w przeglądarce.",
++    // Profiles
++    profileChoose: "Wybierz Profil",
++    profileAdd: "Dodaj Profil",
++    profileCreate: "Utwórz",
++    profileDelete: "Usuń profil",
++    profileDeleteConfirm: "Czy na pewno chcesz usunąć profil",
++    profileNamePlaceholder: "Imię lub nazwa profilu",
++    profileSwitch: "Zmień profil",
++    profileSection: "Profil",
++    // Legal
++    legal: "Informacje prawne",
++    privacyPolicy: "Polityka prywatności",
++    termsOfService: "Regulamin",
++    cancel: "Anuluj",
+     geocoding: "Wyszukiwanie adresu…",
+     geocodeFail: "Nie znaleziono adresu. Spróbuj inaczej.",
+     saved: "Zapisano",
+@@ -570,6 +584,20 @@ const dict = {
+     version: "Version",
+     aboutText:
+       "Universal customer map for mobile professionals. Data stored locally in your browser.",
++    // Profiles
++    profileChoose: "Choose Profile",
++    profileAdd: "Add Profile",
++    profileCreate: "Create",
++    profileDelete: "Delete profile",
++    profileDeleteConfirm: "Are you sure you want to delete profile",
++    profileNamePlaceholder: "Name or profile label",
++    profileSwitch: "Switch profile",
++    profileSection: "Profile",
++    // Legal
++    legal: "Legal",
++    privacyPolicy: "Privacy Policy",
++    termsOfService: "Terms of Service",
++    cancel: "Cancel",
+     geocoding: "Looking up address…",
+     geocodeFail: "Address not found. Try a different format.",
+     saved: "Saved",
+diff --git a/src/pages/Index.tsx b/src/pages/Index.tsx
+index 1aa5102..58ae32a 100644
+--- a/src/pages/Index.tsx
++++ b/src/pages/Index.tsx
+@@ -16,6 +16,8 @@ import { Settings } from "@/components/Settings";
+ import { CustomerForm } from "@/components/CustomerForm";
+ import { CustomerDetail } from "@/components/CustomerDetail";
+ import { useCustomers } from "@/store/customers";
++import { useProfiles } from "@/store/profiles";
++import { ProfileSelect } from "@/components/ProfileSelect";
+ import { useT } from "@/lib/i18n";
+ import { useThemeEffect } from "@/hooks/useTheme";
+ import { useIsMobile } from "@/hooks/use-mobile";
+@@ -31,12 +33,18 @@ const Index = () => {
+   const t = useT();
+   useThemeEffect();
+   const isMobile = useIsMobile();
++  const activeProfileId = useProfiles((s) => s.activeProfileId);
+   const customers = useCustomers((s) => s.customers);
+ 
+   const [tab, setTab] = useState<Tab>("map");
+   const [sheet, setSheet] = useState<SheetMode>({ kind: "none" });
+   const [focusedId, setFocusedId] = useState<string | null>(null);
+ 
++  // Show profile selection screen if no active profile
++  if (!activeProfileId) {
++    return <ProfileSelect />;
++  }
++
+   // Keep detail sheet in sync with latest customer data; close if customer is deleted
+   useEffect(() => {
+     if (sheet.kind === "detail" || sheet.kind === "edit") {
+diff --git a/src/store/customers.ts b/src/store/customers.ts
+index 90f236f..4ce208c 100644
+--- a/src/store/customers.ts
++++ b/src/store/customers.ts
+@@ -1,6 +1,7 @@
+ import { create } from "zustand";
+ import { persist } from "zustand/middleware";
+ import { v4 as uuidv4 } from "uuid";
++import { getActiveStorageKey } from "@/store/profiles";
+ import type {
+   Category,
+   ColorThresholds,
+@@ -369,7 +370,7 @@ export const useCustomers = create<CustomersState>()(
+       },
+     }),
+     {
+-      name: "serwismap-data",
++      name: getActiveStorageKey(),
+       version: 6,
+       migrate: (persisted: unknown, fromVersion: number) => {
+         const state = (persisted ?? {}) as Record<string, unknown>;
+diff --git a/src/store/profiles.ts b/src/store/profiles.ts
+new file mode 100644
+index 0000000..cabd3f7
+--- /dev/null
++++ b/src/store/profiles.ts
+@@ -0,0 +1,98 @@
++import { create } from "zustand";
++import { persist } from "zustand/middleware";
++import { v4 as uuidv4 } from "uuid";
++
++export interface Profile {
++  id: string;
++  name: string;
++  color: string;
++  createdAt: string;
++}
++
++const AVATAR_COLORS = [
++  "#8B5CF6", // purple
++  "#3B82F6", // blue
++  "#22C55E", // green
++  "#F59E0B", // amber
++  "#EF4444", // red
++  "#EC4899", // pink
++  "#14B8A6", // teal
++  "#F97316", // orange
++];
++
++function pickColor(index: number): string {
++  return AVATAR_COLORS[index % AVATAR_COLORS.length];
++}
++
++interface ProfilesState {
++  profiles: Profile[];
++  activeProfileId: string | null;
++
++  addProfile: (name: string) => Profile;
++  removeProfile: (id: string) => void;
++  setActiveProfile: (id: string | null) => void;
++}
++
++export const useProfiles = create<ProfilesState>()(
++  persist(
++    (set, get) => ({
++      profiles: [],
++      activeProfileId: null,
++
++      addProfile: (name: string) => {
++        const profile: Profile = {
++          id: uuidv4(),
++          name,
++          color: pickColor(get().profiles.length),
++          createdAt: new Date().toISOString(),
++        };
++        set({ profiles: [...get().profiles, profile] });
++        return profile;
++      },
++
++      removeProfile: (id: string) => {
++        // Clean up profile's customer data from localStorage
++        try {
++          localStorage.removeItem(`serwismap-data-${id}`);
++        } catch {
++          /* ignore */
++        }
++        const { profiles, activeProfileId } = get();
++        set({
++          profiles: profiles.filter((p) => p.id !== id),
++          activeProfileId: activeProfileId === id ? null : activeProfileId,
++        });
++      },
++
++      setActiveProfile: (id: string | null) => {
++        set({ activeProfileId: id });
++      },
++    }),
++    {
++      name: "mapelo-profiles",
++      version: 1,
++    },
++  ),
++);
++
++/**
++ * Returns the localStorage key for the customers store
++ * of the currently active profile.
++ * Falls back to "serwismap-data" for backward compatibility
++ * (data created before profiles existed).
++ */
++export function getActiveStorageKey(): string {
++  try {
++    const raw = localStorage.getItem("mapelo-profiles");
++    if (raw) {
++      const parsed = JSON.parse(raw);
++      const id = parsed?.state?.activeProfileId;
++      if (typeof id === "string" && id.length > 0) {
++        return `serwismap-data-${id}`;
++      }
++    }
++  } catch {
++    /* ignore */
++  }
++  return "serwismap-data";
++}
+-- 
+2.43.0
+

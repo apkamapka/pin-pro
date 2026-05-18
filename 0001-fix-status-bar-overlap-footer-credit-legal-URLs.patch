@@ -1,0 +1,100 @@
+From 3c3c5e03f33e5f692ede0b298a32857e92d1de96 Mon Sep 17 00:00:00 2001
+From: Mapelo <mapelo@mapelo.app>
+Date: Thu, 14 May 2026 10:55:49 +0000
+Subject: [PATCH] fix: status bar overlap, footer credit, legal URLs
+
+- StatusBar.setOverlaysWebView(false) - content no longer behind status bar
+- Footer: 'Mapelo created by akApp' with link to akappstudio.pl
+- Privacy policy -> akappstudio.pl/Mapelo/polityka-prywatnosci/
+- Terms -> akappstudio.pl/Mapelo/regulamin/
+- Added createdBy i18n key (PL/EN)
+---
+ src/components/Settings.tsx | 17 ++++++++++++++---
+ src/lib/capacitor.ts        |  1 +
+ src/lib/i18n.ts             |  2 ++
+ 3 files changed, 17 insertions(+), 3 deletions(-)
+
+diff --git a/src/components/Settings.tsx b/src/components/Settings.tsx
+index 2ecacc5..8a84b8f 100644
+--- a/src/components/Settings.tsx
++++ b/src/components/Settings.tsx
+@@ -91,7 +91,7 @@ export function Settings() {
+   };
+ 
+   return (
+-    <div className="space-y-6 p-4 max-w-2xl mx-auto">
++    <div className="space-y-6 p-4 pt-6 max-w-2xl mx-auto">
+       <section className="space-y-3">
+         <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+           {t.exportData} / {t.importData}
+@@ -279,7 +279,7 @@ export function Settings() {
+         </h2>
+         <div className="flex flex-col gap-1">
+           <a
+-            href="https://mapelo.app/privacy"
++            href="https://akappstudio.pl/Mapelo/polityka-prywatnosci/"
+             target="_blank"
+             rel="noopener noreferrer"
+             className="text-sm text-primary hover:underline"
+@@ -287,7 +287,7 @@ export function Settings() {
+             {t.privacyPolicy}
+           </a>
+           <a
+-            href="https://mapelo.app/terms"
++            href="https://akappstudio.pl/Mapelo/regulamin/"
+             target="_blank"
+             rel="noopener noreferrer"
+             className="text-sm text-primary hover:underline"
+@@ -301,6 +301,17 @@ export function Settings() {
+         <div className="font-semibold">
+           <span className="text-foreground">Map</span>
+           <span className="text-status-ok">elo</span>
++          <span className="ml-1 font-normal">
++            {t.createdBy}{" "}
++            <a
++              href="https://akappstudio.pl/"
++              target="_blank"
++              rel="noopener noreferrer"
++              className="text-primary hover:underline"
++            >
++              akApp
++            </a>
++          </span>
+         </div>
+         <div>{t.aboutText}</div>
+         <div>
+diff --git a/src/lib/capacitor.ts b/src/lib/capacitor.ts
+index a123f01..2fc7780 100644
+--- a/src/lib/capacitor.ts
++++ b/src/lib/capacitor.ts
+@@ -19,6 +19,7 @@ export async function initNativePlugins(): Promise<void> {
+     const { StatusBar, Style } = await import('@capacitor/status-bar');
+     await StatusBar.setStyle({ style: Style.Light });
+     await StatusBar.setBackgroundColor({ color: '#2563eb' });
++    await StatusBar.setOverlaysWebView({ overlay: false });
+   } catch {
+     /* web fallback – ignore */
+   }
+diff --git a/src/lib/i18n.ts b/src/lib/i18n.ts
+index 4fc3fe8..6a81207 100644
+--- a/src/lib/i18n.ts
++++ b/src/lib/i18n.ts
+@@ -199,6 +199,7 @@ const dict = {
+     privacyPolicy: "Polityka prywatności",
+     termsOfService: "Regulamin",
+     cancel: "Anuluj",
++    createdBy: "created by",
+     geocoding: "Wyszukiwanie adresu…",
+     geocodeFail: "Nie znaleziono adresu. Spróbuj inaczej.",
+     saved: "Zapisano",
+@@ -598,6 +599,7 @@ const dict = {
+     privacyPolicy: "Privacy Policy",
+     termsOfService: "Terms of Service",
+     cancel: "Cancel",
++    createdBy: "created by",
+     geocoding: "Looking up address…",
+     geocodeFail: "Address not found. Try a different format.",
+     saved: "Saved",
+-- 
+2.43.0
+

@@ -1,0 +1,71 @@
+From 7d9a43940de4708e2b0f35310fef2c7e6fe67db0 Mon Sep 17 00:00:00 2001
+From: Claude <claude@anthropic.com>
+Date: Fri, 15 May 2026 21:19:32 +0000
+Subject: [PATCH] fix: ProfileSelect style like Docelo
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+- Mapelo logo: dark circle background (gradient slate-800 to slate-900)
+  with subtle border, size 120px — matches Docelo splash style
+- akApp logo: white rounded-xl background with shadow, 56x56px container
+- Both changes match Docelo app visual style
+---
+ src/components/ProfileSelect.tsx | 21 +++++++++++++--------
+ 1 file changed, 13 insertions(+), 8 deletions(-)
+
+diff --git a/src/components/ProfileSelect.tsx b/src/components/ProfileSelect.tsx
+index 527cebe..81ae01e 100644
+--- a/src/components/ProfileSelect.tsx
++++ b/src/components/ProfileSelect.tsx
+@@ -7,18 +7,22 @@ import type { Profile } from "@/store/profiles";
+ import { useT } from "@/lib/i18n";
+ import { compressImage } from "@/lib/mediaUtils";
+ 
+-/** Mapelo logo from uploaded brand asset, in a circular frame */
+-function MapeloLogo({ size = 96 }: { size?: number }) {
++/** Mapelo logo in a dark circular frame (like Docelo style) */
++function MapeloLogo({ size = 120 }: { size?: number }) {
+   return (
+     <div
+-      className="rounded-full border-2 border-border bg-card shadow-lg overflow-hidden flex items-center justify-center"
+-      style={{ width: size, height: size }}
++      className="rounded-full border-2 border-slate-600 shadow-xl flex items-center justify-center"
++      style={{
++        width: size,
++        height: size,
++        background: "linear-gradient(145deg, #1e293b, #0f172a)",
++      }}
+     >
+       <img
+         src="/mapelo-logo.png"
+         alt="Mapelo"
+-        width={size * 0.75}
+-        height={size * 0.75}
++        width={size * 0.65}
++        height={size * 0.65}
+         className="object-contain"
+       />
+     </div>
+@@ -159,7 +163,7 @@ export function ProfileSelect() {
+       />
+ 
+       {/* Mapelo Logo */}
+-      <MapeloLogo size={96} />
++      <MapeloLogo size={120} />
+       <h1 className="mt-2 mb-1 text-xl font-bold text-foreground">
+         <span>Map</span>
+         <span className="text-green-500">elo</span>
+@@ -302,7 +306,8 @@ export function ProfileSelect() {
+           href="https://akappstudio.pl/"
+           target="_blank"
+           rel="noopener noreferrer"
+-          className="transition-opacity hover:opacity-80"
++          className="flex items-center justify-center rounded-xl bg-white p-2 shadow-sm transition-opacity hover:opacity-80"
++          style={{ width: 56, height: 56 }}
+         >
+           <img
+             src="/akapp-logo.svg"
+-- 
+2.43.0
+

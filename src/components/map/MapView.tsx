@@ -383,7 +383,7 @@ export function MapView({
       </MapContainer>
 
       {/* Filter chips – multi-select kategorie + tagi (drugi rząd). */}
-      <div className="pointer-events-none absolute inset-x-0 top-0 z-[400] flex flex-col items-center gap-1.5 px-3 pt-3">
+      <div className="pointer-events-none absolute inset-x-0 top-0 z-[400] flex flex-col items-center gap-1.5 px-3" style={{ paddingTop: "calc(env(safe-area-inset-top, 2rem) + 0.5rem)" }}>
         {/* Rząd 1: kategorie */}
         <div
           className="chip-row pointer-events-auto flex max-w-full gap-2 overflow-x-auto rounded-full bg-background/95 p-1.5 shadow-floating backdrop-blur"

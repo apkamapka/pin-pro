@@ -1,0 +1,38 @@
+From 746fbf9d2ccd6ebcf6c60fb78c1b3c576333be62 Mon Sep 17 00:00:00 2001
+From: Claude <claude@build>
+Date: Fri, 15 May 2026 21:44:34 +0000
+Subject: [PATCH] style: Mapelo logo in circle + akApp logo on white bg
+
+---
+ src/components/ProfileSelect.tsx | 8 +++++---
+ 1 file changed, 5 insertions(+), 3 deletions(-)
+
+diff --git a/src/components/ProfileSelect.tsx b/src/components/ProfileSelect.tsx
+index b96acb3..844df7c 100644
+--- a/src/components/ProfileSelect.tsx
++++ b/src/components/ProfileSelect.tsx
+@@ -154,8 +154,10 @@ export function ProfileSelect() {
+         onChange={handleLogoFile}
+       />
+ 
+-      {/* Mapelo Logo */}
+-      <MapeloLogo size={100} />
++      {/* Mapelo Logo in circle */}
++      <div className="flex h-28 w-28 items-center justify-center rounded-full bg-white shadow-lg">
++        <MapeloLogo size={80} />
++      </div>
+       <h1 className="mt-2 mb-1 text-xl font-bold text-foreground">
+         <span>Map</span>
+         <span className="text-green-500">elo</span>
+@@ -303,7 +305,7 @@ export function ProfileSelect() {
+           <img
+             src="/akapp-logo.svg"
+             alt="akApp"
+-            className="h-10 w-10"
++            className="h-10 w-10 rounded-lg bg-white p-1 shadow-sm"
+           />
+         </a>
+       </div>
+-- 
+2.43.0
+
