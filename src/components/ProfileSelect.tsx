@@ -10,7 +10,6 @@ import { compressImage } from "@/lib/mediaUtils";
 /** Mapelo logo from uploaded brand asset */
 function MapeloLogo({ size = 120 }: { size?: number }) {
   return (
-<<<<<<< HEAD
     <div
       className="rounded-full overflow-hidden bg-white shadow-lg"
       style={{ width: size, height: size }}
@@ -23,16 +22,6 @@ function MapeloLogo({ size = 120 }: { size?: number }) {
         style={{ objectFit: "cover", display: "block" }}
       />
     </div>
-=======
-    <img
-      src="/mapelo-logo.png"
-      alt="Mapelo"
-      width={size}
-      height={size}
-      className="rounded-full shadow-lg"
-      style={{ objectFit: "cover" }}
-    />
->>>>>>> 1a8edd9ec67c265cbf16904b37543b5310549f6f
   );
 }
 
@@ -315,7 +304,6 @@ export function ProfileSelect() {
           rel="noopener noreferrer"
           className="transition-opacity hover:opacity-80"
         >
-<<<<<<< HEAD
           <div className="h-12 w-12 rounded-full overflow-hidden bg-white shadow-sm">
             <img
               src="/akapp-logo.svg"
@@ -323,13 +311,6 @@ export function ProfileSelect() {
               className="h-full w-full object-cover block"
             />
           </div>
-=======
-          <img
-            src="/akapp-logo.png"
-            alt="akApp"
-            className="h-12 w-12 rounded-full shadow-sm"
-          />
->>>>>>> 1a8edd9ec67c265cbf16904b37543b5310549f6f
         </a>
       </div>
     </div>

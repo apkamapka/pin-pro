@@ -95,7 +95,7 @@ const dict = {
     categoriesEmpty:
       "Nie masz jeszcze żadnych kategorii. Dodaj swoją pierwszą — np. „Awaria”, „Pacjenci stali”, „Rodzina”.",
     categoriesHint:
-      "Twoje kategorie zastępują sztywne statusy. Każda ma swoją nazwę, ikonę i kolor — a Ty przypisujesz je do klientów.",
+      "Kategorie zastępują sztywne statusy. Każda ma swoją nazwę, ikonę i kolor - przypisujesz je do wpisów.",
 
     overdue: "Przeterminowane",
     todayGroup: "Dziś",
@@ -184,7 +184,7 @@ const dict = {
     about: "O aplikacji",
     version: "Wersja",
     aboutText:
-      "Uniwersalna mapa klientów dla mobilnych specjalistów. Dane przechowywane lokalnie w przeglądarce.",
+      "Uniwersalna mapa klientów dla mobilnych specjalistów. Dane przechowywane lokalnie na urządzeniu.",
     // Profiles
     profileChoose: "Wybierz Profil",
     profileAdd: "Dodaj Profil",
@@ -276,7 +276,7 @@ const dict = {
           : `${n} niezmapowanych kolumn trafi do notatek klienta.`,
     importGeocodeTitle: "Wyszukuję adresy na mapie",
     importGeocodeHint:
-      "Korzystamy z darmowego serwisu OpenStreetMap, który ma limit 1 zapytanie/sek. Cierpliwie — nie dotykaj nic.",
+      "Wyszukiwanie adresów może chwilę potrwać. Cierpliwie — nie dotykaj nic.",
     importGeocodeProgress: (done: number, total: number) =>
       `${done} z ${total}`,
     importGeocodeFound: (n: number) =>
@@ -504,7 +504,7 @@ const dict = {
     categoriesEmpty:
       "You don't have any categories yet. Add your first one — e.g. “Urgent”, “Regular patients”, “Family”.",
     categoriesHint:
-      "Your categories replace rigid statuses. Each has a name, icon and color — and you assign them to clients.",
+      "Categories replace fixed statuses. Each has its own name, icon and color — you assign them to entries.",
 
     overdue: "Overdue",
     todayGroup: "Today",
@@ -590,7 +590,7 @@ const dict = {
     about: "About",
     version: "Version",
     aboutText:
-      "Universal customer map for mobile professionals. Data stored locally in your browser.",
+      "Universal customer map for mobile professionals. Data stored locally on your device.",
     // Profiles
     profileChoose: "Choose Profile",
     profileAdd: "Add Profile",
@@ -681,7 +681,7 @@ const dict = {
           : `${n} unmapped columns will be appended to customer notes.`,
     importGeocodeTitle: "Looking up addresses on the map",
     importGeocodeHint:
-      "We use the free OpenStreetMap service which is limited to 1 request per second. Hang tight — don't touch anything.",
+      "Address lookup may take a moment. Please be patient — don't touch anything.",
     importGeocodeProgress: (done: number, total: number) =>
       `${done} of ${total}`,
     importGeocodeFound: (n: number) => (n === 1 ? "1 found" : `${n} found`),
