@@ -80,17 +80,7 @@ export async function initNativePlugins(): Promise<void> {
     /* web fallback */
   }
 
-  try {
-    // Handle Android back button
-    const { App } = await import('@capacitor/app');
-    App.addListener('backButton', ({ canGoBack }) => {
-      if (canGoBack) {
-        window.history.back();
-      } else {
-        App.exitApp();
-      }
-    });
-  } catch {
-    /* web fallback */
-  }
+  // Uwaga: obsługa sprzętowego przycisku „wstecz” (Android) jest teraz
+  // w hooku React `useAndroidBackButton`, bo musi znać stan UI
+  // (otwarty Sheet / aktywna zakładka) i sterować nawigacją w apce.
 }

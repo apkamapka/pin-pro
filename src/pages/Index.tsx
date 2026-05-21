@@ -18,9 +18,12 @@ import { CustomerDetail } from "@/components/CustomerDetail";
 import { useCustomers } from "@/store/customers";
 import { useProfiles } from "@/store/profiles";
 import { ProfileSelect } from "@/components/ProfileSelect";
+import { WelcomeSplash } from "@/components/WelcomeSplash";
+import { useAndroidBackButton } from "@/hooks/useAndroidBackButton";
 import { useT } from "@/lib/i18n";
 import { useThemeEffect } from "@/hooks/useTheme";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { toast } from "sonner";
 import type { Customer } from "@/types/customer";
 
 type SheetMode =
@@ -39,11 +42,30 @@ const Index = () => {
   const [tab, setTab] = useState<Tab>("map");
   const [sheet, setSheet] = useState<SheetMode>({ kind: "none" });
   const [focusedId, setFocusedId] = useState<string | null>(null);
+  const [showSplash, setShowSplash] = useState(() => {
+    // Splash tylko przy zimnym starcie apki. Logowanie/wylogowanie profilu
+    // robi window.location.reload(), co remontuje Index – bez tej flagi splash
+    // wyskakiwałby przy każdym przełączeniu profilu. sessionStorage przeżywa
+    // reload w tej samej sesji WebView, ale czyści się przy starcie apki.
+    try {
+      return !sessionStorage.getItem("mapelo-splash-shown");
+    } catch {
+      return true;
+    }
+  });
 
-  // Show profile selection screen if no active profile
-  if (!activeProfileId) {
-    return <ProfileSelect />;
-  }
+  // Ekran powitalny – widoczny ~3 s przy starcie.
+  useEffect(() => {
+    if (!showSplash) return;
+    try {
+      sessionStorage.setItem("mapelo-splash-shown", "1");
+    } catch {
+      /* ignore */
+    }
+    const id = window.setTimeout(() => setShowSplash(false), 3000);
+    return () => window.clearTimeout(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Keep detail sheet in sync with latest customer data; close if customer is deleted
   useEffect(() => {
@@ -55,6 +77,25 @@ const Index = () => {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [customers]);
+
+  // Sprzętowy „wstecz” na Androidzie: zamknij Sheet → wróć na Mapę →
+  // dopiero podwójne cofnięcie wychodzi z apki.
+  useAndroidBackButton({
+    sheetOpen: sheet.kind !== "none",
+    closeSheet: () => setSheet({ kind: "none" }),
+    onMap: tab === "map",
+    goToMap: () => setTab("map"),
+    exitMessage: t.exitConfirm,
+    notify: (msg) => toast(msg),
+  });
+
+  // Ekran powitalny ma pierwszeństwo, potem wybór profilu.
+  if (showSplash) {
+    return <WelcomeSplash />;
+  }
+  if (!activeProfileId) {
+    return <ProfileSelect />;
+  }
 
   const openDetail = (c: Customer) => {
     setFocusedId(c.id);

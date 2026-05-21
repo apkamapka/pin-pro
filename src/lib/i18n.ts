@@ -419,6 +419,9 @@ const dict = {
       `Masz przeterminowanego klienta ${distance} stąd`,
     nearbyAndMore: (n: number) =>
       n === 1 ? "i 1 więcej" : `i ${n} więcej`,
+
+    // Android: podwójne cofnięcie, aby wyjść z apki
+    exitConfirm: "Naciśnij ponownie, aby wyjść",
   },
   en: {
     appName: "Mapelo",
@@ -821,6 +824,9 @@ const dict = {
       `Overdue customer ${distance} from you`,
     nearbyAndMore: (n: number) =>
       n === 1 ? "and 1 more" : `and ${n} more`,
+
+    // Android: double-back to exit the app
+    exitConfirm: "Press again to exit",
   },
 } as const;
 

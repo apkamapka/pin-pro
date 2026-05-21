@@ -118,6 +118,44 @@ function FlyTo({ lat, lng }: { lat: number; lng: number }) {
   return null;
 }
 
+/**
+ * Dopasowuje widok mapy do wszystkich pinezek przy (re)montażu.
+ *
+ * Po co: propsy `center`/`zoom` na <MapContainer> działają TYLKO przy
+ * pierwszym renderze. Klienci wczytują się z localStorage chwilę po starcie,
+ * a mapa już się utworzyła z domyślnym, światowym widokiem (środek oceanu).
+ * Dodatkowo MapView remontuje się przy każdym powrocie na zakładkę „Mapa”,
+ * więc bez tego widok zawsze wracał do oceanu. Tu czekamy aż pojawią się
+ * współrzędne i jednorazowo dopasowujemy widok do pinezek.
+ *
+ * `enabled=false` gdy zaznaczony jest konkretny klient – wtedy widokiem
+ * steruje <FlyTo>, więc się nie wtrącamy.
+ */
+function FitToCustomers({
+  points,
+  enabled,
+}: {
+  points: [number, number][];
+  enabled: boolean;
+}) {
+  const map = useMap();
+  const didFit = useRef(false);
+  useEffect(() => {
+    if (!enabled || didFit.current || points.length === 0) return;
+    didFit.current = true;
+    if (points.length === 1) {
+      map.setView(points[0], 13, { animate: false });
+    } else {
+      map.fitBounds(L.latLngBounds(points), {
+        padding: [56, 56],
+        maxZoom: 15,
+        animate: false,
+      });
+    }
+  }, [points, enabled, map]);
+  return null;
+}
+
 export function MapView({
   onSelectCustomer,
   onAddAt,
@@ -245,8 +283,18 @@ export function MapView({
     return [avgLat, avgLng];
   }, [customers.length]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const defaultZoom = customers.length === 0 ? 3 : 6;
+  const defaultZoom = customers.length === 0 ? 5 : 6;
   const selected = customers.find((c) => c.id === selectedId);
+
+  // Punkty do auto-dopasowania widoku (wszyscy aktualnie widoczni klienci
+  // z poprawnymi współrzędnymi). Używane przez <FitToCustomers>.
+  const fitPoints = useMemo<[number, number][]>(
+    () =>
+      filtered
+        .filter((c) => Number.isFinite(c.lat) && Number.isFinite(c.lng))
+        .map((c) => [c.lat, c.lng] as [number, number]),
+    [filtered],
+  );
 
   return (
     <div className="relative h-full w-full">
@@ -267,6 +315,7 @@ export function MapView({
         />
         <MapEvents onLongPress={onAddAt} />
         {selected && <FlyTo lat={selected.lat} lng={selected.lng} />}
+        <FitToCustomers points={fitPoints} enabled={!selectedId} />
 
         {filtered.map((c) => {
           const days = c.nextAppointment
