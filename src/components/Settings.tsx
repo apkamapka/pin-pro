@@ -5,6 +5,16 @@ import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import { CategoryManager } from "@/components/CategoryManager";
 import { ImportWizard } from "@/components/ImportWizard";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { useCustomers } from "@/store/customers";
 import { useProfiles } from "@/store/profiles";
 import { COUNTRIES, COUNTRY_AUTO } from "@/lib/countries";
@@ -13,6 +23,7 @@ import { format } from "date-fns";
 import { toast } from "sonner";
 import type { Customer } from "@/types/customer";
 import type { Theme } from "@/store/customers";
+import { saveTextFile, isNative } from "@/lib/capacitor";
 import { TONE_HEX } from "@/lib/pinColor";
 import type { PinTone } from "@/lib/pinColor";
 
@@ -36,6 +47,7 @@ export function Settings() {
   const setNearbyRadiusKm = useCustomers((s) => s.setNearbyRadiusKm);
   const fileRef = useRef<HTMLInputElement>(null);
   const [wizardOpen, setWizardOpen] = useState(false);
+  const [pendingImport, setPendingImport] = useState<Customer[] | null>(null);
 
   const activeProfileId = useProfiles((s) => s.activeProfileId);
   const profiles = useProfiles((s) => s.profiles);
@@ -47,20 +59,17 @@ export function Settings() {
     window.location.reload();
   };
 
-  const handleExport = () => {
-    const data = exportCustomers();
-    const blob = new Blob([JSON.stringify(data, null, 2)], {
-      type: "application/json",
-    });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `mapelo-backup-${format(new Date(), "yyyy-MM-dd")}.json`;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    URL.revokeObjectURL(url);
-    toast.success(t.exported);
+  const handleExport = async () => {
+    try {
+      const data = exportCustomers();
+      const json = JSON.stringify(data, null, 2);
+      const filename = `mapelo-backup-${format(new Date(), "yyyy-MM-dd")}.json`;
+      await saveTextFile(filename, json, "application/json");
+      toast.success(isNative ? t.exportedDownloads : t.exported);
+    } catch (err) {
+      console.error("export failed", err);
+      toast.error("Export failed");
+    }
   };
 
   const handleImportClick = () => fileRef.current?.click();
@@ -72,16 +81,19 @@ export function Settings() {
       const text = await file.text();
       const parsed = JSON.parse(text) as Customer[];
       if (!Array.isArray(parsed)) throw new Error("invalid");
-      const mode = window.confirm(`${t.importMerge}? (cancel = ${t.importReplace})`)
-        ? "merge"
-        : "replace";
-      const n = importCustomers(parsed, mode);
-      toast.success(`${t.imported}: ${n}`);
+      setPendingImport(parsed);
     } catch {
       toast.error("Invalid JSON");
     } finally {
       if (fileRef.current) fileRef.current.value = "";
     }
+  };
+
+  const runImport = (mode: "merge" | "replace") => {
+    if (!pendingImport) return;
+    const n = importCustomers(pendingImport, mode);
+    setPendingImport(null);
+    toast.success(`${t.imported}: ${n}`);
   };
 
   const handleClear = () => {
@@ -127,6 +139,30 @@ export function Settings() {
       </section>
 
       <ImportWizard open={wizardOpen} onOpenChange={setWizardOpen} />
+
+      <AlertDialog
+        open={pendingImport !== null}
+        onOpenChange={(open) => {
+          if (!open) setPendingImport(null);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t.importTitle}</AlertDialogTitle>
+            <AlertDialogDescription>{t.importQuestion}</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="gap-2 sm:gap-2">
+            <AlertDialogCancel>{t.cancel}</AlertDialogCancel>
+            <AlertDialogAction onClick={() => runImport("replace")}>
+              {t.importReplace}
+            </AlertDialogAction>
+            <AlertDialogAction onClick={() => runImport("merge")}>
+              {t.importMerge}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
 
       <section className="space-y-4 rounded-xl border p-4">
         <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">

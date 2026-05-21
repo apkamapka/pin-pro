@@ -5,10 +5,58 @@
  * On a regular browser these functions are safe no-ops.
  */
 
-import { Capacitor } from '@capacitor/core';
+import { Capacitor, registerPlugin } from '@capacitor/core';
+
+/** Native plugin (Android): saves a file directly into the public Downloads folder. */
+interface FileSaverPlugin {
+  saveToDownloads(options: {
+    name: string;
+    data: string;
+    mimeType?: string;
+  }): Promise<{ uri: string }>;
+}
+const FileSaver = registerPlugin<FileSaverPlugin>('FileSaver');
 
 /** true when running inside a Capacitor native shell (Android/iOS) */
 export const isNative = Capacitor.isNativePlatform();
+
+/**
+ * Save a text file across platforms.
+ *
+ * - Web/browser: triggers a normal blob download via an <a> element.
+ * - Native (Android): saves the file straight into the public Downloads
+ *   folder via the FileSaver plugin (a blob `a.click()` does nothing in a
+ *   WebView). The user finds it in Downloads and can share it from there.
+ *
+ * Returns the saved location, or throws on failure.
+ */
+export async function saveTextFile(
+  filename: string,
+  text: string,
+  mimeType = 'application/json',
+): Promise<{ uri: string | null }> {
+  if (!isNative) {
+    // Web path – original blob download.
+    const blob = new Blob([text], { type: mimeType });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+    return { uri: null };
+  }
+
+  // Native path – save directly to the Downloads folder.
+  const { uri } = await FileSaver.saveToDownloads({
+    name: filename,
+    data: text,
+    mimeType,
+  });
+  return { uri };
+}
 
 /** Initialise native plugins – call once at app startup. */
 export async function initNativePlugins(): Promise<void> {

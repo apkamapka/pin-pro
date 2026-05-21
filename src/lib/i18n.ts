@@ -211,6 +211,7 @@ const dict = {
     deleted: "Usunięto",
     imported: "Zaimportowano",
     exported: "Wyeksportowano",
+    exportedDownloads: "Zapisano w folderze Pobrane",
     cleared: "Wyczyszczono",
     longPressHint:
       "Wskazówka: dotknij i przytrzymaj mapę, aby dodać klienta w danym miejscu.",
@@ -220,6 +221,8 @@ const dict = {
     importMode: "Tryb importu",
     importMerge: "Scal",
     importReplace: "Zastąp",
+    importTitle: "Import danych",
+    importQuestion: "Scalić z obecnymi klientami czy zastąpić wszystkich?",
 
     // --- Import z Excela / CSV (Pakiet B+) ---
     importJson: "Importuj z JSON",
@@ -616,6 +619,7 @@ const dict = {
     deleted: "Deleted",
     imported: "Imported",
     exported: "Exported",
+    exportedDownloads: "Saved to Downloads folder",
     cleared: "Cleared",
     longPressHint:
       "Tip: long-press the map to add a customer at that spot.",
@@ -625,6 +629,8 @@ const dict = {
     importMode: "Import mode",
     importMerge: "Merge",
     importReplace: "Replace",
+    importTitle: "Import data",
+    importQuestion: "Merge with your current customers, or replace all of them?",
 
     // --- Import from Excel / CSV (Package B+) ---
     importJson: "Import from JSON",
